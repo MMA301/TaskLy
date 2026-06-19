@@ -1,78 +1,42 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Text, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { AdminHomeScreen } from '../../../admin';
+import { ClientHomeScreen } from '../../../client';
+import { getAuthSession } from '../../../session';
 
 export function HomeScreen() {
-  return (
-    <View style={{ flex: 1, backgroundColor: '#1A102F' }}>
-      <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 64, gap: 16 }}>
-        <View>
-          <Text style={{ color: '#A78BFA', fontSize: 16 }}>Chào mừng trở lại</Text>
-          <Text style={{ color: '#FFF', fontSize: 28, fontWeight: 'bold' }}>Taskly</Text>
-        </View>
+  const router = useRouter();
+  const session = getAuthSession();
 
-        <View
+  if (!session) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#1A102F', justifyContent: 'center', padding: 24 }}>
+        <Text style={{ color: '#FFF', fontSize: 22, fontWeight: 'bold', textAlign: 'center' }}>
+          Bạn chưa đăng nhập
+        </Text>
+        <Text style={{ color: '#A78BFA', fontSize: 14, marginTop: 8, textAlign: 'center' }}>
+          Vui lòng đăng nhập để Taskly chọn đúng giao diện theo vai trò.
+        </Text>
+        <TouchableOpacity
+          onPress={() => router.replace('/login')}
           style={{
-            backgroundColor: '#2A1D45',
-            borderRadius: 16,
-            padding: 20,
-            flexDirection: 'row',
+            backgroundColor: '#8B5CF6',
+            paddingVertical: 14,
+            borderRadius: 12,
             alignItems: 'center',
-            gap: 16,
+            marginTop: 24,
           }}
         >
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 24,
-              backgroundColor: '#8B5CF6',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name="checkmark-done" size={24} color="#FFF" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '600' }}>
-              Công việc hôm nay
-            </Text>
-            <Text style={{ color: '#A78BFA', fontSize: 13, marginTop: 4 }}>
-              Chưa có dữ liệu công việc nào
-            </Text>
-          </View>
-        </View>
+          <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>Đăng nhập</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
-        <View
-          style={{
-            backgroundColor: '#2A1D45',
-            borderRadius: 16,
-            padding: 20,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 16,
-          }}
-        >
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 24,
-              backgroundColor: '#8B5CF6',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name="notifications" size={24} color="#FFF" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '600' }}>Thông báo</Text>
-            <Text style={{ color: '#A78BFA', fontSize: 13, marginTop: 4 }}>
-              Không có thông báo mới
-            </Text>
-          </View>
-        </View>
-      </ScrollView>
-    </View>
-  );
+  if (session.role === 'client') {
+    return <ClientHomeScreen session={session} />;
+  }
+
+  return <AdminHomeScreen session={session} />;
 }

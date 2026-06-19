@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-// Import chính xác 3 bộ dữ liệu từ thư mục mockdata ngang hàng với src
-import { mockAdminsData, mockUsersData, mockClientsData } from '../../../../mockdata';
+import { mockAdminsData, mockClientsData, mockUsersData } from '../../../../mockdata';
+import { setAuthSession } from '../../../session';
 
 export function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const goToTabs = () => router.replace('/(tabs)');
 
   const handleLogin = () => {
     const txtEmail = email.trim().toLowerCase();
@@ -18,40 +20,45 @@ export function LoginScreen() {
       return;
     }
 
-    // 1. Kiểm tra trong danh sách ADMINS
     const isAdmin = mockAdminsData.find(
-      (a) => (a.email?.toLowerCase() === txtEmail || a.username?.toLowerCase() === txtEmail) && a.password === txtPassword
+      (admin) =>
+        (admin.email?.toLowerCase() === txtEmail ||
+          admin.username?.toLowerCase() === txtEmail) &&
+        admin.password === txtPassword
     );
+
     if (isAdmin) {
+      setAuthSession({ role: 'admin', account: isAdmin });
       Alert.alert('Thành công', `Chào mừng Admin: ${isAdmin.name || isAdmin.username}!`, [
-        { text: 'Vào Hệ Thống', onPress: () => router.replace('/(tabs)') } // Sửa route theo app của bạn
+        { text: 'Vào hệ thống', onPress: goToTabs },
       ]);
       return;
     }
 
-    // 2. Kiểm tra trong danh sách USERS (Nhân viên vận hành app)
     const isStaff = mockUsersData.find(
-      (u) => u.email?.toLowerCase() === txtEmail && u.password === txtPassword
+      (user) => user.email?.toLowerCase() === txtEmail && user.password === txtPassword
     );
+
     if (isStaff) {
+      setAuthSession({ role: 'staff', account: isStaff });
       Alert.alert('Thành công', `Nhân viên ${isStaff.name} đăng nhập thành công!`, [
-        { text: 'Bắt đầu làm việc', onPress: () => router.replace('/(tabs)') }
+        { text: 'Bắt đầu làm việc', onPress: goToTabs },
       ]);
       return;
     }
 
-    // 3. Kiểm tra trong danh sách CLIENTS (Khách hàng doanh nghiệp)
     const isClient = mockClientsData.find(
-      (c) => c.email?.toLowerCase() === txtEmail && c.password === txtPassword
+      (client) => client.email?.toLowerCase() === txtEmail && client.password === txtPassword
     );
+
     if (isClient) {
+      setAuthSession({ role: 'client', account: isClient });
       Alert.alert('Thành công', `Xin chào đối tác: ${isClient.companyName}!`, [
-        { text: 'Vào ứng dụng', onPress: () => router.replace('/(tabs)') }
+        { text: 'Vào ứng dụng', onPress: goToTabs },
       ]);
       return;
     }
 
-    // 4. Nếu chạy hết cả 3 mảng không khớp tài khoản nào
     Alert.alert('Thất bại', 'Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!');
   };
 
@@ -59,7 +66,9 @@ export function LoginScreen() {
     <View style={{ flex: 1, backgroundColor: '#1A102F', justifyContent: 'center', paddingHorizontal: 24 }}>
       <View style={{ alignItems: 'center', marginBottom: 40 }}>
         <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#FFF' }}>TASKLY AUTH</Text>
-        <Text style={{ color: '#A78BFA', marginTop: 8 }}>Hỗ trợ tài khoản Admin, Nhân viên & Khách hàng</Text>
+        <Text style={{ color: '#A78BFA', marginTop: 8 }}>
+          Hỗ trợ tài khoản Admin, Nhân viên & Khách hàng
+        </Text>
       </View>
 
       <View style={{ gap: 16 }}>
@@ -90,13 +99,23 @@ export function LoginScreen() {
 
       <TouchableOpacity
         onPress={handleLogin}
-        style={{ backgroundColor: '#8B5CF6', paddingVertical: 16, borderRadius: 12, marginTop: 32, alignItems: 'center' }}
+        style={{
+          backgroundColor: '#8B5CF6',
+          paddingVertical: 16,
+          borderRadius: 12,
+          marginTop: 32,
+          alignItems: 'center',
+        }}
       >
-        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>Đăng Nhập Hệ Thống</Text>
+        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>
+          Đăng nhập hệ thống
+        </Text>
       </TouchableOpacity>
 
       <Text style={{ color: '#7B6F96', fontSize: 12, textAlign: 'center', marginTop: 20 }}>
-        Demo: hoang.nv@taskly.com{'\n'}Mật khẩu: Taskly@123
+        Admin: quan.va.admin@taskly.com{'\n'}
+        Client: contact@techvina.vn{'\n'}
+        Mật khẩu: Taskly@123
       </Text>
     </View>
   );

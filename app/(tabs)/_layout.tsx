@@ -1,25 +1,29 @@
-import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
+import { getAuthSession } from '../../src/session';
 
 export default function TabsLayout() {
+  const session = getAuthSession();
+  const isClient = session?.role === 'client';
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#8B5CF6',
-        tabBarInactiveTintColor: '#7B6F96',
+        tabBarActiveTintColor: isClient ? '#EA580C' : '#38BDF8',
+        tabBarInactiveTintColor: isClient ? '#9CA3AF' : '#94A3B8',
         tabBarStyle: {
-          backgroundColor: '#1A102F',
-          borderTopColor: '#2A1D45',
+          backgroundColor: isClient ? '#FFFFFF' : '#111827',
+          borderTopColor: isClient ? '#FED7AA' : '#374151',
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Trang chủ',
+          title: isClient ? 'Dự án' : 'Quản trị',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+            <Ionicons name={isClient ? 'briefcase' : 'analytics'} size={size} color={color} />
           ),
         }}
       />
@@ -28,7 +32,7 @@ export default function TabsLayout() {
         options={{
           title: 'Tài khoản',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
+            <Ionicons name={isClient ? 'business' : 'person'} size={size} color={color} />
           ),
         }}
       />

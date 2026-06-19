@@ -1,54 +1,79 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { Alert, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { AdminProfileScreen } from '../../../admin';
+import { ClientProfileScreen } from '../../../client';
+import { clearAuthSession, getAuthSession } from '../../../session';
 
 export function ProfileScreen() {
   const router = useRouter();
+  const session = getAuthSession();
+  const isClient = session?.role === 'client';
 
   const handleLogout = () => {
     Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất không?', [
-      { text: 'Huỷ', style: 'cancel' },
+      { text: 'Hủy', style: 'cancel' },
       {
         text: 'Đăng xuất',
         style: 'destructive',
-        onPress: () => router.replace('/login'),
+        onPress: () => {
+          clearAuthSession();
+          router.replace('/login');
+        },
       },
     ]);
   };
 
-  return (
-    <View style={{ flex: 1, backgroundColor: '#1A102F', paddingTop: 64, paddingHorizontal: 24 }}>
-      <View style={{ alignItems: 'center', marginBottom: 32 }}>
-        <View
+  if (!session) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#1A102F', justifyContent: 'center', padding: 24 }}>
+        <Text style={{ color: '#FFF', fontSize: 22, fontWeight: 'bold', textAlign: 'center' }}>
+          Bạn chưa đăng nhập
+        </Text>
+        <TouchableOpacity
+          onPress={() => router.replace('/login')}
           style={{
-            width: 88,
-            height: 88,
-            borderRadius: 44,
-            backgroundColor: '#2A1D45',
+            backgroundColor: '#8B5CF6',
+            paddingVertical: 14,
+            borderRadius: 12,
             alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 16,
+            marginTop: 24,
           }}
         >
-          <Ionicons name="person" size={40} color="#8B5CF6" />
-        </View>
-        <Text style={{ color: '#FFF', fontSize: 20, fontWeight: 'bold' }}>Tài khoản</Text>
-        <Text style={{ color: '#A78BFA', fontSize: 14, marginTop: 4 }}>
-          Hồ sơ người dùng demo
-        </Text>
+          <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>Đăng nhập</Text>
+        </TouchableOpacity>
       </View>
+    );
+  }
+
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: isClient ? '#FFF7ED' : '#111827',
+        paddingTop: 64,
+        paddingHorizontal: 24,
+      }}
+    >
+      {isClient ? (
+        <ClientProfileScreen session={session} />
+      ) : (
+        <AdminProfileScreen session={session} />
+      )}
 
       <TouchableOpacity
         onPress={handleLogout}
         style={{
-          backgroundColor: '#2A1D45',
+          backgroundColor: isClient ? '#FFFFFF' : '#1F2937',
           paddingVertical: 16,
           borderRadius: 12,
           alignItems: 'center',
           flexDirection: 'row',
           justifyContent: 'center',
           gap: 8,
+          borderWidth: 1,
+          borderColor: isClient ? '#FED7AA' : '#374151',
         }}
       >
         <Ionicons name="log-out-outline" size={20} color="#F87171" />
