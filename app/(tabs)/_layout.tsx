@@ -1,5 +1,5 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { BarChart2, Briefcase, Building2, User } from 'lucide-react-native';
 import { getAuthSession } from '../../src/session';
 
 export default function TabsLayout() {
@@ -23,7 +23,11 @@ export default function TabsLayout() {
         options={{
           title: isClient ? 'Dự án' : 'Quản trị',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name={isClient ? 'briefcase' : 'analytics'} size={size} color={color} />
+            isClient ? (
+              <Briefcase size={size} color={color} />
+            ) : (
+              <BarChart2 size={size} color={color} />
+            )
           ),
         }}
       />
@@ -32,7 +36,11 @@ export default function TabsLayout() {
         options={{
           title: 'Tài khoản',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name={isClient ? 'business' : 'person'} size={size} color={color} />
+            isClient ? (
+              <Building2 size={size} color={color} />
+            ) : (
+              <User size={size} color={color} />
+            )
           ),
         }}
       />

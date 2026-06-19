@@ -1,6 +1,5 @@
-import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { AdminHomeScreen } from '../../../admin';
 import { ClientHomeScreen } from '../../../client';
 import { getAuthSession } from '../../../session';

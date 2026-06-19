@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
-import { Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { 
+  Alert, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  View, 
+  KeyboardAvoidingView, 
+  Platform, 
+  ScrollView,
+  ActivityIndicator
+} from 'react-native';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { User, Lock, ArrowRight, ChevronDown, ChevronRight, Apple, Globe } from 'lucide-react-native';
 import { mockAdminsData, mockClientsData, mockUsersData } from '../../../../mockdata';
 import { setAuthSession } from '../../../session';
 
@@ -8,6 +20,8 @@ export function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showDemoAccounts, setShowDemoAccounts] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const goToTabs = () => router.replace('/(tabs)');
 
@@ -20,103 +34,240 @@ export function LoginScreen() {
       return;
     }
 
-    const isAdmin = mockAdminsData.find(
-      (admin) =>
-        (admin.email?.toLowerCase() === txtEmail ||
-          admin.username?.toLowerCase() === txtEmail) &&
-        admin.password === txtPassword
-    );
+    setIsLoading(true);
 
-    if (isAdmin) {
-      setAuthSession({ role: 'admin', account: isAdmin });
-      Alert.alert('Thành công', `Chào mừng Admin: ${isAdmin.name || isAdmin.username}!`, [
-        { text: 'Vào hệ thống', onPress: goToTabs },
-      ]);
-      return;
-    }
+    setTimeout(() => {
+      const isAdmin = mockAdminsData.find(
+        (admin) =>
+          (admin.email?.toLowerCase() === txtEmail ||
+            admin.username?.toLowerCase() === txtEmail) &&
+          admin.password === txtPassword
+      );
 
-    const isStaff = mockUsersData.find(
-      (user) => user.email?.toLowerCase() === txtEmail && user.password === txtPassword
-    );
+      if (isAdmin) {
+        setAuthSession({ role: 'admin', account: isAdmin });
+        goToTabs();
+        return;
+      }
 
-    if (isStaff) {
-      setAuthSession({ role: 'staff', account: isStaff });
-      Alert.alert('Thành công', `Nhân viên ${isStaff.name} đăng nhập thành công!`, [
-        { text: 'Bắt đầu làm việc', onPress: goToTabs },
-      ]);
-      return;
-    }
+      const isStaff = mockUsersData.find(
+        (user) => user.email?.toLowerCase() === txtEmail && user.password === txtPassword
+      );
 
-    const isClient = mockClientsData.find(
-      (client) => client.email?.toLowerCase() === txtEmail && client.password === txtPassword
-    );
+      if (isStaff) {
+        setAuthSession({ role: 'staff', account: isStaff });
+        goToTabs();
+        return;
+      }
 
-    if (isClient) {
-      setAuthSession({ role: 'client', account: isClient });
-      Alert.alert('Thành công', `Xin chào đối tác: ${isClient.companyName}!`, [
-        { text: 'Vào ứng dụng', onPress: goToTabs },
-      ]);
-      return;
-    }
+      const isClient = mockClientsData.find(
+        (client) => client.email?.toLowerCase() === txtEmail && client.password === txtPassword
+      );
 
-    Alert.alert('Thất bại', 'Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!');
+      if (isClient) {
+        setAuthSession({ role: 'client', account: isClient });
+        goToTabs();
+        return;
+      }
+
+      setIsLoading(false);
+      Alert.alert('Thất bại', 'Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!');
+    }, 1500);
+  };
+
+  const fillDemoAccount = (demoEmail: string) => {
+    if (isLoading) return;
+    setEmail(demoEmail);
+    setPassword('Taskly@123');
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#1A102F', justifyContent: 'center', paddingHorizontal: 24 }}>
-      <View style={{ alignItems: 'center', marginBottom: 40 }}>
-        <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#FFF' }}>TASKLY AUTH</Text>
-        <Text style={{ color: '#A78BFA', marginTop: 8 }}>
-          Hỗ trợ tài khoản Admin, Nhân viên & Khách hàng
-        </Text>
-      </View>
-
-      <View style={{ gap: 16 }}>
-        <View>
-          <Text style={{ color: '#DDD', marginBottom: 8 }}>Email / Username</Text>
-          <TextInput
-            style={{ backgroundColor: '#2A1D45', color: '#FFF', padding: 16, borderRadius: 12 }}
-            placeholder="Nhập tài khoản..."
-            placeholderTextColor="#7B6F96"
-            autoCapitalize="none"
-            value={email}
-            onChangeText={setEmail}
-          />
-        </View>
-
-        <View>
-          <Text style={{ color: '#DDD', marginBottom: 8 }}>Mật khẩu</Text>
-          <TextInput
-            style={{ backgroundColor: '#2A1D45', color: '#FFF', padding: 16, borderRadius: 12 }}
-            placeholder="Nhập mật khẩu..."
-            placeholderTextColor="#7B6F96"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-        </View>
-      </View>
-
-      <TouchableOpacity
-        onPress={handleLogin}
-        style={{
-          backgroundColor: '#8B5CF6',
-          paddingVertical: 16,
-          borderRadius: 12,
-          marginTop: 32,
-          alignItems: 'center',
-        }}
+    <SafeAreaView className="flex-1 bg-[#F9FAFB]">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1"
       >
-        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>
-          Đăng nhập hệ thống
-        </Text>
-      </TouchableOpacity>
+        <ScrollView 
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          className="py-10"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Main Card Container */}
+          <View className="bg-white rounded-2xl border-t-4 border-t-[#4F46E5] mx-5 py-8 px-6 shadow-md shadow-black/5 elevation-3">
+            {/* Logo and Headings */}
+            <View className="items-center mb-7">
+              <Text className="text-3xl font-bold text-[#4F46E5] mb-4 tracking-wider">Taskly</Text>
+              <Text className="text-xl font-bold text-[#1F2937] mb-1">Chào mừng bạn trở lại</Text>
+              <Text className="text-sm text-[#6B7280] text-center">Đăng nhập để tiếp tục công việc của bạn.</Text>
+            </View>
 
-      <Text style={{ color: '#7B6F96', fontSize: 12, textAlign: 'center', marginTop: 20 }}>
-        Admin: quan.va.admin@taskly.com{'\n'}
-        Client: contact@techvina.vn{'\n'}
-        Mật khẩu: Taskly@123
-      </Text>
-    </View>
+            {/* Email Field */}
+            <View className="mb-5">
+              <Text className="text-sm font-semibold text-[#374151] mb-2">Email/Số điện thoại</Text>
+              <View className="flex-row items-center border-[1.5px] border-[#E5E7EB] rounded-lg px-4 h-[52px] bg-white">
+                <View className="mr-2.5">
+                  <User size={20} color="#9CA3AF" />
+                </View>
+                <TextInput
+                  className="flex-1 h-full text-[#1F2937] text-[15px]"
+                  placeholder="Nhập email hoặc số điện thoại"
+                  placeholderTextColor="#9CA3AF"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
+
+            {/* Password Field */}
+            <View className="mb-5">
+              <View className="flex-row justify-between items-center mb-2">
+                <Text className="text-sm font-semibold text-[#374151]">Mật khẩu</Text>
+                <TouchableOpacity 
+                  onPress={() => Alert.alert('Thông báo', 'Tính năng đang phát triển')}
+                  disabled={isLoading}
+                >
+                  <Text className="text-[13px] font-semibold text-[#4F46E5]">Quên mật khẩu?</Text>
+                </TouchableOpacity>
+              </View>
+              <View className="flex-row items-center border-[1.5px] border-[#E5E7EB] rounded-lg px-4 h-[52px] bg-white">
+                <View className="mr-2.5">
+                  <Lock size={20} color="#9CA3AF" />
+                </View>
+                <TextInput
+                  className="flex-1 h-full text-[#1F2937] text-[15px]"
+                  placeholder="Nhập mật khẩu"
+                  placeholderTextColor="#9CA3AF"
+                  secureTextEntry
+                  autoCapitalize="none"
+                  value={password}
+                  onChangeText={setPassword}
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
+
+            {/* Submit Button */}
+            <TouchableOpacity 
+              onPress={handleLogin}
+              className={`h-[52px] rounded-lg flex-row justify-center items-center mt-2.5 relative shadow-md ${
+                isLoading 
+                  ? 'bg-[#9CA3AF] shadow-none' 
+                  : 'bg-[#4F46E5] shadow-[#4F46E5]/20'
+              }`}
+              activeOpacity={0.85}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <>
+                  <Text className="text-white text-[16px] font-bold">Đăng nhập</Text>
+                  <View className="absolute right-[18px]">
+                    <ArrowRight size={20} color="#FFF" />
+                  </View>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {/* Social Divider */}
+            <View className="flex-row items-center my-6">
+              <View className="flex-1 h-[1px] bg-[#E5E7EB]" />
+              <Text className="mx-3 text-[12px] text-[#9CA3AF] font-semibold">hoặc đăng nhập bằng</Text>
+              <View className="flex-1 h-[1px] bg-[#E5E7EB]" />
+            </View>
+
+            {/* Social Buttons */}
+            <View className="flex-row gap-3">
+              <TouchableOpacity 
+                className="flex-1 flex-row justify-center items-center border-[1.5px] border-[#E5E7EB] rounded-lg h-[48px] bg-white"
+                activeOpacity={0.7}
+                onPress={() => Alert.alert('Thông báo', 'Đăng nhập Google')}
+                disabled={isLoading}
+              >
+                <View className="mr-2">
+                  <Globe size={18} color="#EA4335" />
+                </View>
+                <Text className="text-[#4B5563] font-semibold text-sm">Google</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                className="flex-1 flex-row justify-center items-center border-[1.5px] border-[#E5E7EB] rounded-lg h-[48px] bg-white"
+                activeOpacity={0.7}
+                onPress={() => Alert.alert('Thông báo', 'Đăng nhập Apple')}
+                disabled={isLoading}
+              >
+                <View className="mr-2">
+                  <Apple size={18} color="#000" />
+                </View>
+                <Text className="text-[#4B5563] font-semibold text-sm">Apple</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Register Footer */}
+            <View className="flex-row justify-center items-center mt-7">
+              <Text className="text-[13px] text-[#6B7280]">Chưa có tài khoản? </Text>
+              <TouchableOpacity 
+                onPress={() => Alert.alert('Thông báo', 'Đăng ký tài khoản mới')}
+                disabled={isLoading}
+              >
+                <Text className="text-[13px] font-semibold text-[#4F46E5]">Đăng ký tài khoản mới</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Quick-fill Demo Account Helper */}
+          <View className="mt-6 mx-5 bg-[#F3F4F6] border-[1px] border-[#E5E7EB] border-dashed rounded-lg p-3">
+            <TouchableOpacity 
+              className="flex-row items-center gap-2"
+              onPress={() => !isLoading && setShowDemoAccounts(!showDemoAccounts)}
+              activeOpacity={0.7}
+              disabled={isLoading}
+            >
+              {showDemoAccounts ? (
+                <ChevronDown size={18} color="#4F46E5" />
+              ) : (
+                <ChevronRight size={18} color="#4F46E5" />
+              )}
+              <Text className="text-[13px] font-semibold text-[#4F46E5]">Tài khoản dùng thử (Nhấn để điền nhanh)</Text>
+            </TouchableOpacity>
+
+            {showDemoAccounts && (
+              <View className="mt-2.5 border-t border-t-[#E5E7EB] pt-2 gap-1.5">
+                <TouchableOpacity 
+                  className="flex-row py-1.5 px-2 bg-white rounded-md border border-[#E5E7EB]"
+                  onPress={() => fillDemoAccount('quan.va.admin@taskly.com')}
+                  disabled={isLoading}
+                >
+                  <Text className="font-bold text-[12px] text-[#374151] w-[80px]">Admin:</Text>
+                  <Text className="text-[12px] text-[#4B5563]">quan.va.admin@taskly.com</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  className="flex-row py-1.5 px-2 bg-white rounded-md border border-[#E5E7EB]"
+                  onPress={() => fillDemoAccount('contact@techvina.vn')}
+                  disabled={isLoading}
+                >
+                  <Text className="font-bold text-[12px] text-[#374151] w-[80px]">Khách hàng:</Text>
+                  <Text className="text-[12px] text-[#4B5563]">contact@techvina.vn</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  className="flex-row py-1.5 px-2 bg-white rounded-md border border-[#E5E7EB]"
+                  onPress={() => fillDemoAccount('mai.lt@taskly.com')}
+                  disabled={isLoading}
+                >
+                  <Text className="font-bold text-[12px] text-[#374151] w-[80px]">Nhân viên:</Text>
+                  <Text className="text-[12px] text-[#4B5563]">mai.lt@taskly.com</Text>
+                </TouchableOpacity>
+                <Text className="text-[11px] text-[#6B7280] italic mt-1 text-center">Mật khẩu chung: Taskly@123</Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
