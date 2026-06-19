@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Building2 } from 'lucide-react-native';
 import type { AuthSession } from '../../session';
 
 type ClientProfileScreenProps = {
@@ -25,7 +25,7 @@ export function ClientProfileScreen({ session }: ClientProfileScreenProps) {
           borderColor: '#FED7AA',
         }}
       >
-        <Ionicons name="business" size={40} color="#EA580C" />
+        <Building2 size={40} color="#EA580C" />
       </View>
       <Text style={{ color: '#111827', fontSize: 20, fontWeight: 'bold' }}>
         {account.companyName || 'Khách hàng'}

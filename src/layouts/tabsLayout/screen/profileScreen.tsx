@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { LogOut } from 'lucide-react-native';
 import { AdminProfileScreen } from '../../../admin';
 import { ClientProfileScreen } from '../../../client';
 import { clearAuthSession, getAuthSession } from '../../../session';
@@ -76,7 +76,7 @@ export function ProfileScreen() {
           borderColor: isClient ? '#FED7AA' : '#374151',
         }}
       >
-        <Ionicons name="log-out-outline" size={20} color="#F87171" />
+        <LogOut size={20} color="#F87171" />
         <Text style={{ color: '#F87171', fontWeight: 'bold', fontSize: 16 }}>Đăng xuất</Text>
       </TouchableOpacity>
     </View>

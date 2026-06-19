@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Briefcase, Receipt, Star, Bell } from 'lucide-react-native';
 import type { AuthSession } from '../../session';
 
 type ClientHomeScreenProps = {
@@ -34,7 +34,7 @@ export function ClientHomeScreen({ session }: ClientHomeScreenProps) {
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Ionicons name="briefcase" size={24} color="#EA580C" />
+            <Briefcase size={24} color="#EA580C" />
             <Text style={{ color: '#111827', fontSize: 18, fontWeight: '700' }}>
               Không gian dự án
             </Text>
@@ -46,7 +46,7 @@ export function ClientHomeScreen({ session }: ClientHomeScreenProps) {
 
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <View style={{ flex: 1, backgroundColor: '#0EA5E9', borderRadius: 12, padding: 16 }}>
-            <Ionicons name="receipt" size={22} color="#E0F2FE" />
+            <Receipt size={22} color="#E0F2FE" />
             <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: 'bold', marginTop: 12 }}>
               {account.totalOrders ?? 0}
             </Text>
@@ -54,7 +54,7 @@ export function ClientHomeScreen({ session }: ClientHomeScreenProps) {
           </View>
 
           <View style={{ flex: 1, backgroundColor: '#F97316', borderRadius: 12, padding: 16 }}>
-            <Ionicons name="star" size={22} color="#FFEDD5" />
+            <Star size={22} color="#FFEDD5" />
             <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: 'bold', marginTop: 12 }}>
               {account.tier || 'Demo'}
             </Text>
@@ -84,7 +84,7 @@ export function ClientHomeScreen({ session }: ClientHomeScreenProps) {
               justifyContent: 'center',
             }}
           >
-            <Ionicons name="notifications" size={24} color="#EA580C" />
+            <Bell size={24} color="#EA580C" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ color: '#111827', fontSize: 16, fontWeight: '600' }}>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Shield } from 'lucide-react-native';
 import type { AuthSession } from '../../session';
 
 type AdminProfileScreenProps = {
@@ -26,7 +26,7 @@ export function AdminProfileScreen({ session }: AdminProfileScreenProps) {
           borderColor: '#374151',
         }}
       >
-        <Ionicons name="shield" size={40} color="#38BDF8" />
+        <Shield size={40} color="#38BDF8" />
       </View>
       <Text style={{ color: '#F9FAFB', fontSize: 20, fontWeight: 'bold' }}>{displayName}</Text>
       <Text style={{ color: '#CBD5E1', fontSize: 14, marginTop: 4 }}>

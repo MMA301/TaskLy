@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { BarChart2, Users, Building2, ShieldCheck } from 'lucide-react-native';
 import type { AuthSession } from '../../session';
 
 type AdminHomeScreenProps = {
@@ -33,7 +33,7 @@ export function AdminHomeScreen({ session }: AdminHomeScreenProps) {
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Ionicons name="analytics" size={24} color="#38BDF8" />
+            <BarChart2 size={24} color="#38BDF8" />
             <Text style={{ color: '#F9FAFB', fontSize: 18, fontWeight: '700' }}>
               Bảng điều khiển
             </Text>
@@ -45,7 +45,7 @@ export function AdminHomeScreen({ session }: AdminHomeScreenProps) {
 
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <View style={{ flex: 1, backgroundColor: '#0F766E', borderRadius: 12, padding: 16 }}>
-            <Ionicons name="people" size={22} color="#CCFBF1" />
+            <Users size={22} color="#CCFBF1" />
             <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: 'bold', marginTop: 12 }}>
               3
             </Text>
@@ -53,7 +53,7 @@ export function AdminHomeScreen({ session }: AdminHomeScreenProps) {
           </View>
 
           <View style={{ flex: 1, backgroundColor: '#7C3AED', borderRadius: 12, padding: 16 }}>
-            <Ionicons name="business" size={22} color="#EDE9FE" />
+            <Building2 size={22} color="#EDE9FE" />
             <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: 'bold', marginTop: 12 }}>
               2
             </Text>
@@ -83,7 +83,7 @@ export function AdminHomeScreen({ session }: AdminHomeScreenProps) {
               justifyContent: 'center',
             }}
           >
-            <Ionicons name="shield-checkmark" size={24} color="#34D399" />
+            <ShieldCheck size={24} color="#34D399" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ color: '#F9FAFB', fontSize: 16, fontWeight: '600' }}>
