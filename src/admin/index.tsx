@@ -1,2 +1,2 @@
-export * from './screen/adminHomeScreen';
-export * from './screen/adminProfileScreen';
+export * from './adminHomeLayout';
+export * from './adminProfileLayout';

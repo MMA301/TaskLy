@@ -12,6 +12,7 @@ export type DemoAccount = {
   totalOrders?: number;
   assignedTasks?: number;
   rating?: number;
+  permissions?: string[];
 };
 
 export type AuthSession = {

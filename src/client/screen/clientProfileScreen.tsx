@@ -11,29 +11,17 @@ export function ClientProfileScreen({ session }: ClientProfileScreenProps) {
   const account = session.account;
 
   return (
-    <View style={{ alignItems: 'center', marginBottom: 32 }}>
-      <View
-        style={{
-          width: 88,
-          height: 88,
-          borderRadius: 44,
-          backgroundColor: '#FFEDD5',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 16,
-          borderWidth: 1,
-          borderColor: '#FED7AA',
-        }}
-      >
+    <View className="items-center mb-8">
+      <View className="w-[88px] h-[88px] rounded-full bg-[#FFEDD5] items-center justify-center mb-4 border border-[#FED7AA]">
         <Building2 size={40} color="#EA580C" />
       </View>
-      <Text style={{ color: '#111827', fontSize: 20, fontWeight: 'bold' }}>
+      <Text className="text-[#111827] text-xl font-bold">
         {account.companyName || 'Khách hàng'}
       </Text>
-      <Text style={{ color: '#4B5563', fontSize: 14, marginTop: 4 }}>
+      <Text className="text-[#4B5563] text-sm mt-1">
         {account.contactName || 'Người liên hệ'}
       </Text>
-      <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 6 }}>{account.email}</Text>
+      <Text className="text-[#6B7280] text-[13px] mt-1.5">{account.email}</Text>
     </View>
   );
 }

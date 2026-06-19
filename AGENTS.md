@@ -36,6 +36,7 @@ This project currently uses Expo SDK `~54.0.34`, React Native `0.81.5`, React `1
 ## Coding conventions
 
 - Use TypeScript and keep `strict` mode clean.
+- Use Tailwind CSS styling via NativeWind utility classes (`className`, `contentContainerClassName`) instead of vanilla `StyleSheet`.
 - Prefer React Native primitives and Expo Router APIs already used in the app.
 - Preserve the route/layout split: navigation files in `app/`, screen implementation in `src/layouts/.../screen`.
 - Keep barrel exports in each layout folder and `src/layouts/index.tsx` updated when adding screens.

@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Briefcase, BarChart2, Building2, User } from 'lucide-react-native';
+import { BarChart2, Briefcase, Building2, User } from 'lucide-react-native';
 import { getAuthSession } from '../../src/session';
 
 export default function TabsLayout() {

@@ -1,7 +1,6 @@
-import React from 'react';
-import { Alert, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LogOut } from 'lucide-react-native';
+import { Alert, Text, TouchableOpacity, View } from 'react-native';
 import { AdminProfileScreen } from '../../../admin';
 import { ClientProfileScreen } from '../../../client';
 import { clearAuthSession, getAuthSession } from '../../../session';
@@ -27,35 +26,22 @@ export function ProfileScreen() {
 
   if (!session) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#1A102F', justifyContent: 'center', padding: 24 }}>
-        <Text style={{ color: '#FFF', fontSize: 22, fontWeight: 'bold', textAlign: 'center' }}>
+      <View className="flex-1 bg-[#1A102F] justify-center p-6">
+        <Text className="text-white text-2xl font-bold text-center">
           Bạn chưa đăng nhập
         </Text>
         <TouchableOpacity
           onPress={() => router.replace('/login')}
-          style={{
-            backgroundColor: '#8B5CF6',
-            paddingVertical: 14,
-            borderRadius: 12,
-            alignItems: 'center',
-            marginTop: 24,
-          }}
+          className="bg-[#8B5CF6] py-3.5 rounded-xl items-center mt-6"
         >
-          <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>Đăng nhập</Text>
+          <Text className="text-white font-bold text-[16px]">Đăng nhập</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: isClient ? '#FFF7ED' : '#111827',
-        paddingTop: 64,
-        paddingHorizontal: 24,
-      }}
-    >
+    <View className={`flex-1 pt-16 px-6 ${isClient ? 'bg-[#FFF7ED]' : 'bg-[#111827]'}`}>
       {isClient ? (
         <ClientProfileScreen session={session} />
       ) : (
@@ -64,20 +50,13 @@ export function ProfileScreen() {
 
       <TouchableOpacity
         onPress={handleLogout}
-        style={{
-          backgroundColor: isClient ? '#FFFFFF' : '#1F2937',
-          paddingVertical: 16,
-          borderRadius: 12,
-          alignItems: 'center',
-          flexDirection: 'row',
-          justifyContent: 'center',
-          gap: 8,
-          borderWidth: 1,
-          borderColor: isClient ? '#FED7AA' : '#374151',
-        }}
+        className={`py-4 rounded-xl items-center flex-row justify-center gap-2 border ${isClient ? 'bg-white border-[#FED7AA]' : 'bg-[#1F2937] border-[#374151]'
+          }`}
       >
-        <LogOut size={20} color="#F87171" />
-        <Text style={{ color: '#F87171', fontWeight: 'bold', fontSize: 16 }}>Đăng xuất</Text>
+        <View className="mr-1">
+          <LogOut size={20} color="#F87171" />
+        </View>
+        <Text className="text-[#F87171] font-bold text-[16px]">Đăng xuất</Text>
       </TouchableOpacity>
     </View>
   );

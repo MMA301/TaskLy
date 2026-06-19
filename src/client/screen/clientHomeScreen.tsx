@@ -11,86 +11,59 @@ export function ClientHomeScreen({ session }: ClientHomeScreenProps) {
   const account = session.account;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FFF7ED' }}>
-      <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 64, gap: 16 }}>
+    <View className="flex-1 bg-[#FFF7ED]">
+      <ScrollView contentContainerClassName="p-6 pt-16 gap-4">
         <View>
-          <Text style={{ color: '#EA580C', fontSize: 16 }}>Cổng khách hàng</Text>
-          <Text style={{ color: '#111827', fontSize: 28, fontWeight: 'bold' }}>
+          <Text className="text-[#EA580C] text-[16px]">Cổng khách hàng</Text>
+          <Text className="text-[#111827] text-3xl font-bold">
             {account.companyName || 'Taskly Client'}
           </Text>
-          <Text style={{ color: '#6B7280', fontSize: 14, marginTop: 4 }}>
+          <Text className="text-[#6B7280] text-sm mt-1">
             Người liên hệ: {account.contactName || account.email}
           </Text>
         </View>
 
-        <View
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 12,
-            padding: 20,
-            gap: 8,
-            borderWidth: 1,
-            borderColor: '#FED7AA',
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Briefcase size={24} color="#EA580C" />
-            <Text style={{ color: '#111827', fontSize: 18, fontWeight: '700' }}>
+        <View className="bg-white rounded-xl p-5 gap-2 border border-[#FED7AA]">
+          <View className="flex-row items-center gap-3">
+            <View className="mr-1">
+              <Briefcase size={24} color="#EA580C" />
+            </View>
+            <Text className="text-[#111827] text-lg font-bold">
               Không gian dự án
             </Text>
           </View>
-          <Text style={{ color: '#4B5563', fontSize: 14 }}>
+          <Text className="text-[#4B5563] text-sm">
             Xem tiến độ đơn hàng, yêu cầu hỗ trợ và thông báo dành riêng cho doanh nghiệp.
           </Text>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <View style={{ flex: 1, backgroundColor: '#0EA5E9', borderRadius: 12, padding: 16 }}>
+        <View className="flex-row gap-3">
+          <View className="flex-1 bg-[#0EA5E9] rounded-xl p-4">
             <Receipt size={22} color="#E0F2FE" />
-            <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: 'bold', marginTop: 12 }}>
+            <Text className="text-white text-2xl font-bold mt-3">
               {account.totalOrders ?? 0}
             </Text>
-            <Text style={{ color: '#E0F2FE', fontSize: 13 }}>Tổng đơn hàng</Text>
+            <Text className="text-[#E0F2FE] text-[13px]">Tổng đơn hàng</Text>
           </View>
 
-          <View style={{ flex: 1, backgroundColor: '#F97316', borderRadius: 12, padding: 16 }}>
+          <View className="flex-1 bg-[#F97316] rounded-xl p-4">
             <Star size={22} color="#FFEDD5" />
-            <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: 'bold', marginTop: 12 }}>
+            <Text className="text-white text-2xl font-bold mt-3">
               {account.tier || 'Demo'}
             </Text>
-            <Text style={{ color: '#FFEDD5', fontSize: 13 }}>Gói dịch vụ</Text>
+            <Text className="text-[#FFEDD5] text-[13px]">Gói dịch vụ</Text>
           </View>
         </View>
 
-        <View
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: 12,
-            padding: 20,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 16,
-            borderWidth: 1,
-            borderColor: '#FED7AA',
-          }}
-        >
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 24,
-              backgroundColor: '#FFEDD5',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
+        <View className="bg-white rounded-xl p-5 flex-row items-center gap-4 border border-[#FED7AA]">
+          <View className="w-12 h-12 rounded-full bg-[#FFEDD5] items-center justify-center">
             <Bell size={24} color="#EA580C" />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: '#111827', fontSize: 16, fontWeight: '600' }}>
+          <View className="flex-1">
+            <Text className="text-[#111827] text-[16px] font-semibold">
               Thông báo khách hàng
             </Text>
-            <Text style={{ color: '#6B7280', fontSize: 13, marginTop: 4 }}>
+            <Text className="text-[#6B7280] text-[13px] mt-1">
               Chưa có thông báo mới trong tài khoản demo.
             </Text>
           </View>

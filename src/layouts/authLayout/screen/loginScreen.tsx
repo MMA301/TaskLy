@@ -5,7 +5,6 @@ import {
   TextInput, 
   TouchableOpacity, 
   View, 
-  StyleSheet, 
   KeyboardAvoidingView, 
   Platform, 
   ScrollView,
@@ -16,7 +15,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { User, Lock, ArrowRight, ChevronDown, ChevronRight, Apple, Globe } from 'lucide-react-native';
 import { mockAdminsData, mockClientsData, mockUsersData } from '../../../../mockdata';
 import { setAuthSession } from '../../../session';
-
 
 export function LoginScreen() {
   const router = useRouter();
@@ -83,33 +81,35 @@ export function LoginScreen() {
     setPassword('Taskly@123');
   };
 
-
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView className="flex-1 bg-[#F9FAFB]">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        className="flex-1"
       >
         <ScrollView 
-          contentContainerStyle={styles.scrollContainer} 
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          className="py-10"
           showsVerticalScrollIndicator={false}
         >
           {/* Main Card Container */}
-          <View style={styles.card}>
+          <View className="bg-white rounded-2xl border-t-4 border-t-[#4F46E5] mx-5 py-8 px-6 shadow-md shadow-black/5 elevation-3">
             {/* Logo and Headings */}
-            <View style={styles.headerContainer}>
-              <Text style={styles.brandText}>Taskly</Text>
-              <Text style={styles.mainTitle}>Chào mừng bạn trở lại</Text>
-              <Text style={styles.subTitle}>Đăng nhập để tiếp tục công việc của bạn.</Text>
+            <View className="items-center mb-7">
+              <Text className="text-3xl font-bold text-[#4F46E5] mb-4 tracking-wider">Taskly</Text>
+              <Text className="text-xl font-bold text-[#1F2937] mb-1">Chào mừng bạn trở lại</Text>
+              <Text className="text-sm text-[#6B7280] text-center">Đăng nhập để tiếp tục công việc của bạn.</Text>
             </View>
 
             {/* Email Field */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email/Số điện thoại</Text>
-              <View style={styles.inputContainer}>
-                <User size={20} color="#9CA3AF" style={styles.inputIcon} />
+            <View className="mb-5">
+              <Text className="text-sm font-semibold text-[#374151] mb-2">Email/Số điện thoại</Text>
+              <View className="flex-row items-center border-[1.5px] border-[#E5E7EB] rounded-lg px-4 h-[52px] bg-white">
+                <View className="mr-2.5">
+                  <User size={20} color="#9CA3AF" />
+                </View>
                 <TextInput
-                  style={styles.input}
+                  className="flex-1 h-full text-[#1F2937] text-[15px]"
                   placeholder="Nhập email hoặc số điện thoại"
                   placeholderTextColor="#9CA3AF"
                   autoCapitalize="none"
@@ -122,20 +122,22 @@ export function LoginScreen() {
             </View>
 
             {/* Password Field */}
-            <View style={styles.inputGroup}>
-              <View style={styles.labelRow}>
-                <Text style={styles.label}>Mật khẩu</Text>
+            <View className="mb-5">
+              <View className="flex-row justify-between items-center mb-2">
+                <Text className="text-sm font-semibold text-[#374151]">Mật khẩu</Text>
                 <TouchableOpacity 
                   onPress={() => Alert.alert('Thông báo', 'Tính năng đang phát triển')}
                   disabled={isLoading}
                 >
-                  <Text style={styles.forgotText}>Quên mật khẩu?</Text>
+                  <Text className="text-[13px] font-semibold text-[#4F46E5]">Quên mật khẩu?</Text>
                 </TouchableOpacity>
               </View>
-              <View style={styles.inputContainer}>
-                <Lock size={20} color="#9CA3AF" style={styles.inputIcon} />
+              <View className="flex-row items-center border-[1.5px] border-[#E5E7EB] rounded-lg px-4 h-[52px] bg-white">
+                <View className="mr-2.5">
+                  <Lock size={20} color="#9CA3AF" />
+                </View>
                 <TextInput
-                  style={styles.input}
+                  className="flex-1 h-full text-[#1F2937] text-[15px]"
                   placeholder="Nhập mật khẩu"
                   placeholderTextColor="#9CA3AF"
                   secureTextEntry
@@ -150,7 +152,11 @@ export function LoginScreen() {
             {/* Submit Button */}
             <TouchableOpacity 
               onPress={handleLogin}
-              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+              className={`h-[52px] rounded-lg flex-row justify-center items-center mt-2.5 relative shadow-md ${
+                isLoading 
+                  ? 'bg-[#9CA3AF] shadow-none' 
+                  : 'bg-[#4F46E5] shadow-[#4F46E5]/20'
+              }`}
               activeOpacity={0.85}
               disabled={isLoading}
             >
@@ -158,58 +164,64 @@ export function LoginScreen() {
                 <ActivityIndicator color="#FFF" />
               ) : (
                 <>
-                  <Text style={styles.loginButtonText}>Đăng nhập</Text>
-                  <ArrowRight size={20} color="#FFF" style={styles.arrowIcon} />
+                  <Text className="text-white text-[16px] font-bold">Đăng nhập</Text>
+                  <View className="absolute right-[18px]">
+                    <ArrowRight size={20} color="#FFF" />
+                  </View>
                 </>
               )}
             </TouchableOpacity>
 
             {/* Social Divider */}
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>hoặc đăng nhập bằng</Text>
-              <View style={styles.dividerLine} />
+            <View className="flex-row items-center my-6">
+              <View className="flex-1 h-[1px] bg-[#E5E7EB]" />
+              <Text className="mx-3 text-[12px] text-[#9CA3AF] font-semibold">hoặc đăng nhập bằng</Text>
+              <View className="flex-1 h-[1px] bg-[#E5E7EB]" />
             </View>
 
             {/* Social Buttons */}
-            <View style={styles.socialRow}>
+            <View className="flex-row gap-3">
               <TouchableOpacity 
-                style={styles.socialButton}
+                className="flex-1 flex-row justify-center items-center border-[1.5px] border-[#E5E7EB] rounded-lg h-[48px] bg-white"
                 activeOpacity={0.7}
                 onPress={() => Alert.alert('Thông báo', 'Đăng nhập Google')}
                 disabled={isLoading}
               >
-                <Globe size={18} color="#EA4335" style={styles.socialIcon} />
-                <Text style={styles.socialButtonText}>Google</Text>
+                <View className="mr-2">
+                  <Globe size={18} color="#EA4335" />
+                </View>
+                <Text className="text-[#4B5563] font-semibold text-sm">Google</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
-                style={styles.socialButton}
+                className="flex-1 flex-row justify-center items-center border-[1.5px] border-[#E5E7EB] rounded-lg h-[48px] bg-white"
                 activeOpacity={0.7}
                 onPress={() => Alert.alert('Thông báo', 'Đăng nhập Apple')}
                 disabled={isLoading}
               >
-                <Apple size={18} color="#000" style={styles.socialIcon} />
-                <Text style={styles.socialButtonText}>Apple</Text>
+                <View className="mr-2">
+                  <Apple size={18} color="#000" />
+                </View>
+                <Text className="text-[#4B5563] font-semibold text-sm">Apple</Text>
               </TouchableOpacity>
             </View>
 
             {/* Register Footer */}
-            <View style={styles.registerFooter}>
-              <Text style={styles.noAccountText}>Chưa có tài khoản? </Text>
+            <View className="flex-row justify-center items-center mt-7">
+              <Text className="text-[13px] text-[#6B7280]">Chưa có tài khoản? </Text>
               <TouchableOpacity 
                 onPress={() => Alert.alert('Thông báo', 'Đăng ký tài khoản mới')}
                 disabled={isLoading}
               >
-                <Text style={styles.registerText}>Đăng ký tài khoản mới</Text>
+                <Text className="text-[13px] font-semibold text-[#4F46E5]">Đăng ký tài khoản mới</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Quick-fill Demo Account Helper */}
-          <View style={styles.demoHelperContainer}>
+          <View className="mt-6 mx-5 bg-[#F3F4F6] border-[1px] border-[#E5E7EB] border-dashed rounded-lg p-3">
             <TouchableOpacity 
-              style={styles.demoCollapseHeader} 
+              className="flex-row items-center gap-2"
               onPress={() => !isLoading && setShowDemoAccounts(!showDemoAccounts)}
               activeOpacity={0.7}
               disabled={isLoading}
@@ -219,38 +231,38 @@ export function LoginScreen() {
               ) : (
                 <ChevronRight size={18} color="#4F46E5" />
               )}
-              <Text style={styles.demoCollapseTitle}>Tài khoản dùng thử (Nhấn để điền nhanh)</Text>
+              <Text className="text-[13px] font-semibold text-[#4F46E5]">Tài khoản dùng thử (Nhấn để điền nhanh)</Text>
             </TouchableOpacity>
 
             {showDemoAccounts && (
-              <View style={styles.demoAccountList}>
+              <View className="mt-2.5 border-t border-t-[#E5E7EB] pt-2 gap-1.5">
                 <TouchableOpacity 
-                  style={styles.demoItem} 
+                  className="flex-row py-1.5 px-2 bg-white rounded-md border border-[#E5E7EB]"
                   onPress={() => fillDemoAccount('quan.va.admin@taskly.com')}
                   disabled={isLoading}
                 >
-                  <Text style={styles.demoItemRole}>Admin:</Text>
-                  <Text style={styles.demoItemEmail}>quan.va.admin@taskly.com</Text>
+                  <Text className="font-bold text-[12px] text-[#374151] w-[80px]">Admin:</Text>
+                  <Text className="text-[12px] text-[#4B5563]">quan.va.admin@taskly.com</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity 
-                  style={styles.demoItem} 
+                  className="flex-row py-1.5 px-2 bg-white rounded-md border border-[#E5E7EB]"
                   onPress={() => fillDemoAccount('contact@techvina.vn')}
                   disabled={isLoading}
                 >
-                  <Text style={styles.demoItemRole}>Khách hàng:</Text>
-                  <Text style={styles.demoItemEmail}>contact@techvina.vn</Text>
+                  <Text className="font-bold text-[12px] text-[#374151] w-[80px]">Khách hàng:</Text>
+                  <Text className="text-[12px] text-[#4B5563]">contact@techvina.vn</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity 
-                  style={styles.demoItem} 
+                  className="flex-row py-1.5 px-2 bg-white rounded-md border border-[#E5E7EB]"
                   onPress={() => fillDemoAccount('mai.lt@taskly.com')}
                   disabled={isLoading}
                 >
-                  <Text style={styles.demoItemRole}>Nhân viên:</Text>
-                  <Text style={styles.demoItemEmail}>mai.lt@taskly.com</Text>
+                  <Text className="font-bold text-[12px] text-[#374151] w-[80px]">Nhân viên:</Text>
+                  <Text className="text-[12px] text-[#4B5563]">mai.lt@taskly.com</Text>
                 </TouchableOpacity>
-                <Text style={styles.demoPasswordHint}>Mật khẩu chung: Taskly@123</Text>
+                <Text className="text-[11px] text-[#6B7280] italic mt-1 text-center">Mật khẩu chung: Taskly@123</Text>
               </View>
             )}
           </View>
@@ -259,228 +271,3 @@ export function LoginScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F9FAFB', // Light gray background
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingVertical: 40,
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderTopWidth: 5,
-    borderTopColor: '#4F46E5', // Purple accent line on top
-    marginHorizontal: 20,
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-    // Shadow / Elevation for iOS and Android
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 3,
-  },
-  headerContainer: {
-    alignItems: 'center',
-    marginBottom: 28,
-  },
-  brandText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#4F46E5',
-    marginBottom: 16,
-    letterSpacing: 0.5,
-  },
-  mainTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 6,
-  },
-  subTitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  forgotText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#4F46E5',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    height: 52,
-    backgroundColor: '#FFF',
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    height: '100%',
-    color: '#1F2937',
-    fontSize: 15,
-  },
-  loginButton: {
-    backgroundColor: '#4F46E5',
-    height: 52,
-    borderRadius: 10,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
-    position: 'relative',
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  loginButtonDisabled: {
-    backgroundColor: '#9CA3AF',
-    shadowColor: '#9CA3AF',
-  },
-  loginButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  arrowIcon: {
-    position: 'absolute',
-    right: 18,
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E5E7EB',
-  },
-  dividerText: {
-    marginHorizontal: 12,
-    fontSize: 12,
-    color: '#9CA3AF',
-    fontWeight: '500',
-  },
-  socialRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  socialButton: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
-    height: 48,
-    backgroundColor: '#FFF',
-  },
-  socialIcon: {
-    marginRight: 8,
-  },
-  socialButtonText: {
-    color: '#4B5563',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  registerFooter: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 28,
-  },
-  noAccountText: {
-    fontSize: 13,
-    color: '#6B7280',
-  },
-  registerText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4F46E5',
-  },
-  demoHelperContainer: {
-    marginTop: 24,
-    marginHorizontal: 20,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderStyle: 'dashed',
-    borderRadius: 10,
-    padding: 12,
-  },
-  demoCollapseHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  demoCollapseTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4F46E5',
-  },
-  demoAccountList: {
-    marginTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    paddingTop: 8,
-    gap: 6,
-  },
-  demoItem: {
-    flexDirection: 'row',
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    backgroundColor: '#FFF',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  demoItemRole: {
-    fontWeight: 'bold',
-    fontSize: 12,
-    color: '#374151',
-    width: 80,
-  },
-  demoItemEmail: {
-    fontSize: 12,
-    color: '#4B5563',
-  },
-  demoPasswordHint: {
-    fontSize: 11,
-    color: '#6B7280',
-    fontStyle: 'italic',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-});
