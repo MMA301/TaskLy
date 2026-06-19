@@ -1,0 +1,35 @@
+[
+  {
+    "id": "u_01",
+    "name": "Nguyễn Văn Hoàng",
+    "email": "hoang.nv@taskly.com",
+    "password": "Taskly@123",
+    "role": "staff_operator",
+    "status": "active",
+    "assignedTasks": 5,
+    "rating": 4.8,
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Hoang"
+  },
+  {
+    "id": "u_02",
+    "name": "Lê Thị Mai",
+    "email": "mai.lt@taskly.com",
+    "password": "Taskly@123",
+    "role": "staff_support",
+    "status": "active",
+    "assignedTasks": 2,
+    "rating": 4.9,
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Mai"
+  },
+  {
+    "id": "u_03",
+    "name": "Trần Tuấn Kiệt",
+    "email": "kiet.tt@taskly.com",
+    "password": "Taskly@123",
+    "role": "staff_technician",
+    "status": "busy",
+    "assignedTasks": 8,
+    "rating": 4.5,
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Kiet"
+  }
+]
