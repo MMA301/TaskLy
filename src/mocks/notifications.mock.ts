@@ -1,0 +1,46 @@
+import type { TaskerNotification } from '@/src/features/tasker/types/tasker.types';
+
+export const notificationsMock: TaskerNotification[] = [
+  {
+    id: 'noti_001',
+    group: 'Task',
+    type: 'task',
+    icon: 'work',
+    title: 'Cong viec moi phu hop!',
+    message: 'Don dep can ho 2 phong ngu tai Quan 1 vua duoc dang. Hay xem ngay!',
+    timeLabel: '2 phut truoc',
+    isRead: false,
+    amount: 500000,
+    locationLabel: 'Quan 1, HCM',
+  },
+  {
+    id: 'noti_002',
+    group: 'Message',
+    type: 'message',
+    icon: 'message',
+    title: 'Tin nhan tu Nguyen Van A',
+    message: 'Chao ban, minh da nhan duoc yeu cau. Minh se co mat dung gio.',
+    timeLabel: '15 phut truoc',
+    isRead: false,
+  },
+  {
+    id: 'noti_003',
+    group: 'Payment',
+    type: 'payment',
+    icon: 'account-balance-wallet',
+    title: 'Thanh toan hoan tat',
+    message: 'Ban da nhan duoc 200.000d tu cong viec Giao hang nhanh.',
+    timeLabel: 'Hom qua',
+    isRead: true,
+  },
+  {
+    id: 'noti_004',
+    group: 'System',
+    type: 'system',
+    icon: 'settings',
+    title: 'Cap nhat he thong',
+    message: 'Taskly da cap nhat giao dien moi giup ban trai nghiem tot hon.',
+    timeLabel: '2 ngay truoc',
+    isRead: true,
+  },
+];
