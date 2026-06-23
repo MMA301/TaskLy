@@ -3,6 +3,7 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import { AdminHomeScreen } from '../../../admin';
 import { ClientHomeScreen } from '../../../client';
 import { getAuthSession } from '../../../session';
+import { TaskerHomeScreen } from '../../../tasker';
 
 export function HomeScreen() {
   const router = useRouter();
@@ -35,6 +36,10 @@ export function HomeScreen() {
 
   if (session.role === 'client') {
     return <ClientHomeScreen session={session} />;
+  }
+
+  if (session.role === 'staff') {
+    return <TaskerHomeScreen />;
   }
 
   return <AdminHomeScreen session={session} />;

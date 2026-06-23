@@ -1,0 +1,153 @@
+{
+  "profile": {
+    "id": "t_01",
+    "name": "Nguyễn Minh Đức",
+    "displayName": "Nam",
+    "title": "Chuyên gia cấp cao",
+    "email": "mai.lt@taskly.com",
+    "phone": "09*** **123",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/png?seed=TaskerMinhDuc",
+    "bio": "Thợ sửa chữa đa năng với hơn 5 năm kinh nghiệm trong lĩnh vực điện nước và lắp đặt nội thất. Luôn cam kết chất lượng tốt nhất và sự hài lòng cho khách hàng tại TP.HCM.",
+    "location": "Quận 1, TP. Hồ Chí Minh",
+    "level": "Đối tác Taskly",
+    "completedJobs": 128,
+    "rating": 4.9,
+    "responseRate": "100%",
+    "successRate": "98%",
+    "monthlyIncome": "15.420.000đ",
+    "todayIncome": "1.250.000đ",
+    "balance": "15.450.000đ",
+    "skills": ["Điện nước", "Lắp đặt IKEA", "Sơn sửa nhà", "Vận chuyển nội thất", "Khoan tường"],
+    "verifications": ["Số điện thoại: 09*** **123", "CCCD đã xác thực", "Giấy phép hành nghề"]
+  },
+  "nearbyTasks": [
+    {
+      "id": "task_01",
+      "category": "Dọn dẹp",
+      "title": "Dọn dẹp căn hộ 2 phòng ngủ",
+      "price": "500.000đ",
+      "distance": "0.8 km",
+      "postedAgo": "2 giờ trước",
+      "address": "Tòa Landmark 81, Vinhomes Central Park, Quận Bình Thạnh, TP.HCM",
+      "time": "Hôm nay, 14:00",
+      "duration": "3 giờ",
+      "customer": "Nguyễn Thị Mai Anh",
+      "customerRating": "4.9",
+      "urgent": true,
+      "icon": "cleaning"
+    },
+    {
+      "id": "task_02",
+      "category": "Giao hàng",
+      "title": "Vận chuyển tủ lạnh nhỏ (1km)",
+      "price": "150.000đ",
+      "distance": "1.2 km",
+      "postedAgo": "45 phút trước",
+      "address": "Quận 1 → Quận 3",
+      "time": "Hôm nay, 16:30",
+      "duration": "1 giờ",
+      "customer": "Anh Tuấn",
+      "customerRating": "4.9",
+      "urgent": false,
+      "icon": "delivery"
+    },
+    {
+      "id": "task_03",
+      "category": "Sửa chữa",
+      "title": "Sửa vòi nước bị rò rỉ",
+      "price": "350.000đ",
+      "distance": "2.5 km",
+      "postedAgo": "1 giờ trước",
+      "address": "Quận 7, TP.HCM",
+      "time": "Ngày mai, 09:00",
+      "duration": "2 giờ",
+      "customer": "Chị Linh",
+      "customerRating": "4.8",
+      "urgent": false,
+      "icon": "repair"
+    },
+    {
+      "id": "task_04",
+      "category": "Mua hộ",
+      "title": "Mua thực phẩm tại Co.op Mart",
+      "price": "80.000đ",
+      "distance": "0.5 km",
+      "postedAgo": "5 phút trước",
+      "address": "Quận 1, TP.HCM",
+      "time": "Hôm nay, 18:00",
+      "duration": "45 phút",
+      "customer": "Cô Hạnh",
+      "customerRating": "5.0",
+      "urgent": true,
+      "icon": "shopping"
+    }
+  ],
+  "acceptedTasks": [
+    {
+      "id": "accepted_01",
+      "status": "Đang thực hiện",
+      "title": "Dọn dẹp căn hộ 2 phòng ngủ",
+      "location": "Vinhomes Central Park, Bình Thạnh",
+      "price": "450.000đ",
+      "progress": 75,
+      "customer": "Chị Mai Anh",
+      "note": "Khách hàng VIP"
+    },
+    {
+      "id": "accepted_02",
+      "status": "Đang giao hàng",
+      "title": "Giao quà tặng hỏa tốc",
+      "location": "2.5 km • Quận 1 → Quận 3",
+      "price": "120.000đ",
+      "progress": 40,
+      "customer": "Anh Tuấn",
+      "note": "4.9 sao"
+    },
+    {
+      "id": "accepted_03",
+      "status": "Ngày mai • 09:00",
+      "title": "Lắp đặt kệ sách gỗ",
+      "location": "Thứ 3, 24 tháng 10",
+      "price": "800.000đ",
+      "progress": 0,
+      "customer": "Chị Linh",
+      "note": "Sắp diễn ra"
+    }
+  ],
+  "history": [
+    { "id": "h_01", "title": "Dọn dẹp căn hộ 2PN", "date": "24 Th10, 2023", "status": "Đã hoàn thành", "amount": "+450.000đ", "tone": "success", "icon": "cleaning" },
+    { "id": "h_02", "title": "Vận chuyển tủ lạnh 300L", "date": "22 Th10, 2023", "status": "Đã hủy", "amount": "250.000đ", "tone": "error", "icon": "delivery" },
+    { "id": "h_03", "title": "Sửa ống nước nhà tắm", "date": "19 Th10, 2023", "status": "Đang khiếu nại", "amount": "---", "tone": "warning", "icon": "repair" },
+    { "id": "h_04", "title": "Đi chợ giúp người cao tuổi", "date": "15 Th10, 2023", "status": "Đã hoàn thành", "amount": "+120.000đ", "tone": "success", "icon": "shopping" }
+  ],
+  "messages": [
+    { "id": "m_01", "from": "customer", "text": "Chào anh Đức, hôm nay anh có thể đến sớm hơn 15 phút được không ạ? Tôi có việc bận đột xuất lúc 16h.", "time": "10:30 AM" },
+    { "id": "m_02", "from": "tasker", "text": "Chào chị Vân. Vâng, không vấn đề gì ạ. Em sẽ có mặt lúc 13:45 để bắt đầu công việc sớm hơn nhé.", "time": "10:32 AM" },
+    { "id": "m_03", "from": "customer", "text": "Cảm ơn anh nhiều. Tôi có để sẵn dụng cụ vệ sinh ở ban công, anh cứ tự nhiên sử dụng nhé.", "time": "10:35 AM" },
+    { "id": "m_04", "from": "tasker", "text": "Dạ vâng em ghi nhớ rồi ạ. Chị có lưu ý gì đặc biệt cho phòng ngủ nhỏ không ạ?", "time": "10:40 AM" },
+    { "id": "m_05", "from": "customer", "text": "Chỗ kệ sách trong phòng ngủ cần lau kỹ bụi giúp tôi nhé.", "time": "10:42 AM" }
+  ],
+  "notifications": [
+    { "id": "n_01", "type": "work", "title": "Công việc mới phù hợp!", "body": "Dọn dẹp căn hộ 2 phòng ngủ tại Quận 1 vừa được đăng. Hãy xem ngay!", "time": "2 phút trước", "tags": ["500.000đ", "Quận 1, HCM"], "unread": true },
+    { "id": "n_02", "type": "message", "title": "Tin nhắn từ Nguyễn Văn A", "body": "Chào bạn, mình đã nhận được yêu cầu. Mình sẽ có mặt đúng giờ.", "time": "15 phút trước", "tags": [], "unread": true },
+    { "id": "n_03", "type": "wallet", "title": "Thanh toán hoàn tất", "body": "Bạn đã nhận được 200.000đ từ công việc Giao hàng nhanh.", "time": "Hôm qua", "tags": [], "unread": false },
+    { "id": "n_04", "type": "settings", "title": "Cập nhật hệ thống", "body": "Taskly đã cập nhật giao diện mới giúp bạn trải nghiệm tốt hơn.", "time": "2 ngày trước", "tags": [], "unread": false }
+  ],
+  "transactions": [
+    { "id": "tx_01", "title": "Dọn dẹp căn hộ Vinhome", "subtitle": "Hôm nay, 14:30 • Thanh toán công việc", "amount": "+350.000đ", "status": "Thành công", "type": "inflow", "icon": "cleaning" },
+    { "id": "tx_02", "title": "Rút tiền về MB Bank", "subtitle": "Hôm qua, 09:15 • Rút tiền", "amount": "-2.000.000đ", "status": "Đang xử lý", "type": "outflow", "icon": "bank" },
+    { "id": "tx_03", "title": "Giao hàng hỏa tốc - Quận 1", "subtitle": "02 Thg 5, 18:20 • Thanh toán công việc", "amount": "+120.000đ", "status": "Thành công", "type": "inflow", "icon": "delivery" },
+    { "id": "tx_04", "title": "Sửa ống nước - Landmark 81", "subtitle": "01 Thg 5, 10:00 • Thanh toán công việc", "amount": "+550.000đ", "status": "Thành công", "type": "inflow", "icon": "repair" }
+  ],
+  "reviews": [
+    { "id": "r_01", "name": "Nguyễn Thị Mai", "rating": 5, "time": "2 giờ trước", "text": "Rất hài lòng với dịch vụ vệ sinh máy lạnh. Anh thợ đến đúng giờ, làm việc cực kỳ cẩn thận và còn tư vấn thêm cách sử dụng tiết kiệm điện.", "tags": ["Dọn dẹp nhà", "Đúng hẹn"] },
+    { "id": "r_02", "name": "Trần Anh Dũng", "rating": 4, "time": "Hôm qua", "text": "Thợ nhiệt tình, sửa ống nước nhanh chóng. Chỉ tiếc là đến trễ 10 phút do kẹt xe nhưng đã chủ động gọi điện báo trước.", "tags": ["Sửa điện nước"] },
+    { "id": "r_03", "name": "Lê Văn Hùng", "rating": 5, "time": "3 ngày trước", "text": "Tuyệt vời! Đây là thợ có tay nghề tốt nhất. Dọn dẹp sạch sẽ sau khi sửa chữa. 5 sao!", "tags": ["Tận tâm", "Kỹ thuật cao"] }
+  ],
+  "schedule": [
+    { "id": "s_01", "time": "08:00", "title": "Dọn dẹp căn hộ", "location": "Vinhomes Central Park, Q. Bình Thạnh", "price": "250k", "tone": "primary" },
+    { "id": "s_02", "time": "13:30", "title": "Giao hàng thực phẩm", "location": "Thảo Điền, Quận 2", "price": "120k", "tone": "secondary" },
+    { "id": "s_03", "time": "16:00", "title": "Thời gian trống", "location": "Có thể nhận thêm việc", "price": "+ Nhận việc", "tone": "empty" },
+    { "id": "s_04", "time": "19:00", "title": "Dạy kèm tiếng Anh", "location": "Phú Mỹ Hưng, Quận 7", "price": "300k", "tone": "primary" }
+  ]
+}

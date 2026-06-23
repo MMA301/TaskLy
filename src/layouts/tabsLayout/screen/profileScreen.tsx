@@ -4,11 +4,13 @@ import { Alert, Text, TouchableOpacity, View } from 'react-native';
 import { AdminProfileScreen } from '../../../admin';
 import { ClientProfileScreen } from '../../../client';
 import { clearAuthSession, getAuthSession } from '../../../session';
+import { TaskerProfileScreen } from '../../../tasker';
 
 export function ProfileScreen() {
   const router = useRouter();
   const session = getAuthSession();
   const isClient = session?.role === 'client';
+  const isStaff = session?.role === 'staff';
 
   const handleLogout = () => {
     Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất không?', [
@@ -38,6 +40,10 @@ export function ProfileScreen() {
         </TouchableOpacity>
       </View>
     );
+  }
+
+  if (isStaff) {
+    return <TaskerProfileScreen />;
   }
 
   return (
