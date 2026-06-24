@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, Modal, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, TouchableWithoutFeedback } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Home, Briefcase, DollarSign, Brain, Users as UsersIcon, LogOut, Menu, X } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import type { AuthSession } from '../../../session';
@@ -251,7 +252,7 @@ export function AdminHomeScreen({ session }: AdminHomeScreenProps) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F9FAFB]">
+    <SafeAreaView className="flex-1 bg-[#F9FAFB]" edges={['top', 'left', 'right']}>
       {/* Top Header */}
       <View className="px-5 pt-3 pb-3 bg-white border-b border-b-slate-100 flex-row justify-between items-center">
         <View className="flex-row items-center gap-3">

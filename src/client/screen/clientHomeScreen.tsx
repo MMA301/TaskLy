@@ -1,5 +1,6 @@
 import React from 'react';
 import { ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Briefcase, Receipt, Star, Bell } from 'lucide-react-native';
 import type { AuthSession } from '../../session';
 
@@ -11,8 +12,8 @@ export function ClientHomeScreen({ session }: ClientHomeScreenProps) {
   const account = session.account;
 
   return (
-    <View className="flex-1 bg-[#FFF7ED]">
-      <ScrollView contentContainerClassName="p-6 pt-16 gap-4">
+    <SafeAreaView className="flex-1 bg-[#FFF7ED]" edges={['top', 'left', 'right']}>
+      <ScrollView contentContainerClassName="p-6 pt-4 gap-4">
         <View>
           <Text className="text-[#EA580C] text-[16px]">Cổng khách hàng</Text>
           <Text className="text-[#111827] text-3xl font-bold">
@@ -69,6 +70,6 @@ export function ClientHomeScreen({ session }: ClientHomeScreenProps) {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }

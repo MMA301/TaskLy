@@ -20,6 +20,7 @@ import {
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { mockTaskerData } from '../../../../mockdata';
 import { TaskerBottomNav } from '../../components/TaskerBottomNav';
 import {
@@ -271,10 +272,10 @@ function TaskerScreenFrame({
   children: ReactNode;
 }) {
   return (
-    <View className="flex-1 bg-[#F9F9FF]">
+    <SafeAreaView className="flex-1 bg-[#F9F9FF]" edges={['top', 'bottom', 'left', 'right']}>
       <View className="flex-1">{children}</View>
       <TaskerBottomNav active={active} onSelect={onSelect} />
-    </View>
+    </SafeAreaView>
   );
 }
 

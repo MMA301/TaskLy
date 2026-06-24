@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { LogOut } from 'lucide-react-native';
 import { Alert, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AdminProfileScreen } from '../../../admin';
 import { ClientProfileScreen } from '../../../client';
 import { clearAuthSession, getAuthSession } from '../../../session';
@@ -47,7 +48,10 @@ export function ProfileScreen() {
   }
 
   return (
-    <View className={`flex-1 pt-16 px-6 ${isClient ? 'bg-[#FFF7ED]' : 'bg-[#111827]'}`}>
+    <SafeAreaView 
+      className={`flex-1 px-6 ${isClient ? 'bg-[#FFF7ED]' : 'bg-[#111827]'}`}
+      edges={['top', 'left', 'right']}
+    >
       {isClient ? (
         <ClientProfileScreen session={session} />
       ) : (
@@ -64,6 +68,6 @@ export function ProfileScreen() {
         </View>
         <Text className="text-[#F87171] font-bold text-[16px]">Đăng xuất</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
