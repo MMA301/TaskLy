@@ -9,15 +9,16 @@ type HeaderProps = {
   title?: string;
   subtitle?: string;
   onBack?: () => void;
+  onMenuPress?: () => void;
   right?: ReactNode;
 };
 
-export function TaskerHeader({ title = 'Taskly', subtitle, onBack, right }: HeaderProps) {
+export function TaskerHeader({ title = 'Taskly', subtitle, onBack, onMenuPress, right }: HeaderProps) {
   return (
     <View className="h-16 bg-[#F9F9FF] border-b border-[#E7EEFF] px-4 flex-row items-center justify-between">
       <View className="flex-row items-center gap-3 flex-1">
         <TouchableOpacity
-          onPress={onBack}
+          onPress={onBack ?? onMenuPress}
           className="w-10 h-10 rounded-full items-center justify-center active:bg-[#F0F3FF]"
         >
           {onBack ? <ArrowLeft size={22} color={TASKER_COLORS.primary} /> : <Menu size={22} color={TASKER_COLORS.primary} />}

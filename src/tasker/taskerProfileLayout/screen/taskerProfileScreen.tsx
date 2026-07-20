@@ -1,12 +1,12 @@
-import { Bell, CheckCircle2, ChevronRight, Headphones, Lock, UserRound, WalletCards, Wrench } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Bell, CheckCircle2, ChevronRight, Headphones, Lock, LogOut, UserRound, WalletCards, Wrench } from 'lucide-react-native';
 import { useState } from 'react';
-import type { ReactNode } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { mockTaskerData } from '../../../../mockdata';
-import { TaskerBottomNav } from '../../components/TaskerBottomNav';
-import { GradientButton, IconTile, TaskerCard, TaskerHeader, TaskerPill } from '../../taskerHomeLayout/components/TaskerPrimitives';
-import { TASKER_COLORS } from '../../taskerTheme';
-import type { TaskerBottomTabKey, TaskerIcon, TaskerScreenKey } from '../../types';
+import { IconTile, TaskerCard, TaskerHeader, TaskerPill } from '../../taskerHomeLayout/components/TaskerPrimitives';
+import { TASKER_COLORS, taskerShadow } from '../../taskerTheme';
+import type { TaskerIcon, TaskerScreenKey } from '../../types';
 import { AcceptTaskScreen, NearbyTasksScreen, TaskHistoryScreen } from '../../taskerTasksLayout';
 import { EarningsDashboardScreen } from './earningsDashboardScreen';
 import { ReviewsRatingsScreen } from './reviewsRatingsScreen';
@@ -19,6 +19,7 @@ type TaskerProfileScreenProps = {
 type ProfileLocalScreen = 'profile' | 'earnings' | 'reviews' | 'schedule' | 'nearby' | 'accept' | 'history';
 
 export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenProps) {
+  const router = useRouter();
   const [screen, setScreen] = useState<ProfileLocalScreen>('profile');
   const back = () => setScreen('profile');
   const navigate = (next: TaskerScreenKey) => {
@@ -26,27 +27,21 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
       setScreen(next);
     }
   };
-  const handleBottomSelect = (tab: TaskerBottomTabKey) => {
-    setScreen(tab === 'dashboard' ? 'profile' : tab === 'nearby' ? 'nearby' : tab === 'accept' ? 'accept' : tab === 'history' ? 'history' : 'profile');
-  };
-  const renderWithNav = (content: ReactNode) => (
-    embedded ? content : (
-      <TaskerProfileFrame active={getProfileBottomTab(screen)} onSelect={handleBottomSelect}>
-        {content}
-      </TaskerProfileFrame>
-    )
-  );
 
-  if (screen === 'nearby') return renderWithNav(<NearbyTasksScreen onBack={back} onNavigate={navigate} />);
-  if (screen === 'accept') return renderWithNav(<AcceptTaskScreen onBack={back} onNavigate={navigate} />);
-  if (screen === 'history') return renderWithNav(<TaskHistoryScreen onBack={back} onNavigate={navigate} />);
-  if (screen === 'earnings') return renderWithNav(<EarningsDashboardScreen onBack={back} onNavigate={navigate} />);
-  if (screen === 'reviews') return renderWithNav(<ReviewsRatingsScreen onBack={back} onNavigate={navigate} />);
-  if (screen === 'schedule') return renderWithNav(<ScheduleCalendarScreen onBack={back} onNavigate={navigate} />);
+  const handleLogout = () => {
+    router.replace('/login');
+  };
+
+  if (screen === 'nearby') return <NearbyTasksScreen onBack={back} onNavigate={navigate} />;
+  if (screen === 'accept') return <AcceptTaskScreen onBack={back} onNavigate={navigate} />;
+  if (screen === 'history') return <TaskHistoryScreen onBack={back} onNavigate={navigate} />;
+  if (screen === 'earnings') return <EarningsDashboardScreen onBack={back} onNavigate={navigate} />;
+  if (screen === 'reviews') return <ReviewsRatingsScreen onBack={back} onNavigate={navigate} />;
+  if (screen === 'schedule') return <ScheduleCalendarScreen onBack={back} onNavigate={navigate} />;
 
   const profile = mockTaskerData.profile;
 
-  return renderWithNav(
+  return (
     <View className="flex-1 bg-[#F9F9FF]">
       <TaskerHeader title="Hồ sơ Tasker" subtitle={profile.level} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-6 pb-8">
@@ -75,25 +70,70 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
           </View>
         </TaskerCard>
 
+        {/* Wallet & Schedule Cards — equal height */}
         <View className="flex-row gap-3 mb-5">
-          <TouchableOpacity onPress={() => setScreen('earnings')} activeOpacity={0.88} className="flex-1">
-            <GradientButton>
-              <View className="items-start w-full">
-                <Text className="text-white text-[18px] font-extrabold">Ví tiền</Text>
-                <Text className="text-white/80 text-[12px] mt-1">Rút tiền và giao dịch</Text>
+          {/* Ví tiền */}
+          <TouchableOpacity
+            onPress={() => setScreen('earnings')}
+            activeOpacity={0.88}
+            style={{ flex: 1 }}
+          >
+            <LinearGradient
+              colors={[TASKER_COLORS.primary, TASKER_COLORS.secondary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[
+                taskerShadow,
+                { borderRadius: 12, padding: 16, minHeight: 120 },
+              ]}
+            >
+              <View
+                style={{
+                  width: 40, height: 40, borderRadius: 10,
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 12,
+                }}
+              >
+                <WalletCards size={20} color="#FFFFFF" />
               </View>
-            </GradientButton>
+              <Text className="text-white text-[16px] font-extrabold">Ví tiền</Text>
+              <Text className="text-white/70 text-[12px] mt-1">Rút tiền và giao dịch</Text>
+            </LinearGradient>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setScreen('schedule')} activeOpacity={0.88} className="flex-1">
-            <TaskerCard className="p-4 bg-[#DEE8FF]">
-              <Text className="text-[#111C2D] text-[18px] font-extrabold">Trạng thái rảnh</Text>
-              <Text className="text-[#464555] text-[12px] mt-1">Đang nhận việc mới</Text>
-              <View className="w-14 h-8 bg-[#3525CD] rounded-full p-1 items-end mt-4">
-                <View className="w-6 h-6 rounded-full bg-white" />
+
+          {/* Trạng thái rảnh */}
+          <TouchableOpacity
+            onPress={() => setScreen('schedule')}
+            activeOpacity={0.88}
+            style={{ flex: 1 }}
+          >
+            <View
+              style={[
+                taskerShadow,
+                {
+                  flex: 1, minHeight: 120, borderRadius: 12, padding: 16,
+                  backgroundColor: '#DEE8FF',
+                  borderWidth: 1, borderColor: 'rgba(199,196,216,0.6)',
+                },
+              ]}
+            >
+              <View
+                style={{
+                  width: 40, height: 40, borderRadius: 10,
+                  backgroundColor: 'rgba(199,196,216,0.4)',
+                  alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 12,
+                }}
+              >
+                <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#16A34A' }} />
               </View>
-            </TaskerCard>
+              <Text className="text-[#111C2D] text-[16px] font-extrabold">Trạng thái</Text>
+              <Text className="text-[#464555] text-[12px] mt-1">Đang nhận việc mới</Text>
+            </View>
           </TouchableOpacity>
         </View>
+
 
         <TaskerCard className="p-4 mb-5">
           <Text className="text-[#111C2D] text-[20px] font-extrabold mb-4">Kỹ năng</Text>
@@ -135,34 +175,24 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
             </TouchableOpacity>
           </View>
         </TaskerCard>
+
+        {/* Logout */}
+        <TouchableOpacity
+          onPress={handleLogout}
+          activeOpacity={0.85}
+          className="flex-row items-center justify-center gap-3 rounded-xl border-2 border-[#FFDAD6] bg-[#FFF8F7] py-4 mt-4 mb-4"
+        >
+          <LogOut size={20} color="#BA1A1A" />
+          <Text className="text-[#BA1A1A] font-extrabold text-[15px]">Đăng xuất</Text>
+
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
 }
 
-function getProfileBottomTab(screen: ProfileLocalScreen): TaskerBottomTabKey {
-  if (screen === 'nearby') return 'nearby';
-  if (screen === 'accept') return 'accept';
-  if (screen === 'history') return 'history';
-  return 'profile';
-}
 
-function TaskerProfileFrame({
-  active,
-  onSelect,
-  children,
-}: {
-  active: TaskerBottomTabKey;
-  onSelect: (tab: TaskerBottomTabKey) => void;
-  children: ReactNode;
-}) {
-  return (
-    <View className="flex-1 bg-[#F9F9FF]">
-      <View className="flex-1">{children}</View>
-      <TaskerBottomNav active={active} onSelect={onSelect} />
-    </View>
-  );
-}
+
 
 function ProfileStat({ value, label }: { value: string; label: string }) {
   return (

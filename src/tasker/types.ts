@@ -14,7 +14,7 @@ export type TaskerScreenKey =
   | 'schedule'
   | 'profile';
 
-export type TaskerBottomTabKey = 'dashboard' | 'nearby' | 'accept' | 'history' | 'profile';
+export type TaskerBottomTabKey = 'dashboard' | 'nearby' | 'history' | 'profile';
 
 export type TaskerScreenProps = {
   onBack: () => void;

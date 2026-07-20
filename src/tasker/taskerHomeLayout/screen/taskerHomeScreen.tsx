@@ -4,6 +4,7 @@ import {
   Bell,
   CalendarDays,
   CheckCircle2,
+  ChevronRight,
   Clock,
   History,
   ListChecks,
@@ -16,10 +17,11 @@ import {
   TrendingUp,
   UserRound,
   WalletCards,
+  X,
 } from 'lucide-react-native';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { mockTaskerData } from '../../../../mockdata';
 import { TaskerBottomNav } from '../../components/TaskerBottomNav';
@@ -33,7 +35,6 @@ import {
 import { MessagesScreen, NotificationsScreen } from '../../taskerMessagesLayout';
 import { EarningsDashboardScreen, ReviewsRatingsScreen, ScheduleCalendarScreen, TaskerProfileScreen } from '../../taskerProfileLayout';
 import {
-  IconTile,
   MiniBarChart,
   SectionTitle,
   TaskerCard,
@@ -55,12 +56,28 @@ const chartValues = [
   { label: 'CN', value: 150 },
 ];
 
+const menuItems: { icon: TaskerIcon; label: string; sublabel: string; screen: TaskerScreenKey }[] = [
+  { icon: Search, label: 'Việc gần đây', sublabel: 'Tìm công việc quanh bạn', screen: 'nearby' },
+  { icon: ShieldCheck, label: 'Nhận việc', sublabel: 'Xác nhận và nhận công việc', screen: 'accept' },
+  { icon: ListChecks, label: 'Việc đã nhận', sublabel: 'Quản lý các công việc hiện tại', screen: 'accepted' },
+  { icon: History, label: 'Lịch sử', sublabel: 'Xem lịch sử công việc', screen: 'history' },
+  { icon: MessageCircle, label: 'Tin nhắn', sublabel: 'Trò chuyện với khách hàng', screen: 'messages' },
+  { icon: Bell, label: 'Thông báo', sublabel: 'Cập nhật hoạt động mới nhất', screen: 'notifications' },
+  { icon: WalletCards, label: 'Thu nhập', sublabel: 'Theo dõi và rút tiền', screen: 'earnings' },
+  { icon: Star, label: 'Đánh giá', sublabel: 'Xem uy tín từ khách hàng', screen: 'reviews' },
+  { icon: CalendarDays, label: 'Lịch trình', sublabel: 'Quản lý lịch rảnh của bạn', screen: 'schedule' },
+];
+
 export function TaskerHomeScreen() {
   const [screen, setScreen] = useState<TaskerScreenKey>('dashboard');
+  const [menuOpen, setMenuOpen] = useState(false);
   const goDashboard = () => setScreen('dashboard');
-  const navigate = (next: TaskerScreenKey) => setScreen(next);
+  const navigate = (next: TaskerScreenKey) => {
+    setMenuOpen(false);
+    setScreen(next);
+  };
   const handleBottomSelect = (tab: TaskerBottomTabKey) => {
-    setScreen(tab === 'dashboard' ? 'dashboard' : tab === 'nearby' ? 'nearby' : tab === 'accept' ? 'accept' : tab === 'history' ? 'history' : 'profile');
+    setScreen(tab === 'dashboard' ? 'dashboard' : tab === 'nearby' ? 'nearby' : tab === 'history' ? 'history' : 'profile');
   };
   const activeBottomTab = getBottomTab(screen);
 
@@ -104,151 +121,200 @@ export function TaskerHomeScreen() {
   return (
     <TaskerScreenFrame active={activeBottomTab} onSelect={handleBottomSelect}>
       <View className="flex-1 bg-[#F9F9FF]">
-      <TaskerHeader
-        right={
-          <View className="flex-row items-center gap-2">
-            <TouchableOpacity
-              onPress={() => navigate('notifications')}
-              className="w-10 h-10 rounded-full bg-white border border-[#D8E3FB] items-center justify-center"
-            >
-              <Bell size={18} color={TASKER_COLORS.muted} />
+        <TaskerHeader
+          onMenuPress={() => setMenuOpen(true)}
+          right={
+            <View className="flex-row items-center gap-2">
+              <TouchableOpacity
+                onPress={() => navigate('notifications')}
+                className="w-10 h-10 rounded-full bg-white border border-[#D8E3FB] items-center justify-center"
+              >
+                <Bell size={18} color={TASKER_COLORS.muted} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigate('profile')}>
+                <View className="w-10 h-10 rounded-full bg-[#E2DFFF] border-2 border-[#4F46E5] items-center justify-center">
+                  <UserRound size={18} color={TASKER_COLORS.primary} />
+                </View>
+              </TouchableOpacity>
+            </View>
+          }
+        />
+
+        {/* Hamburger Nav Modal */}
+        <Modal visible={menuOpen} transparent animationType="slide" onRequestClose={() => setMenuOpen(false)}>
+          <Pressable
+            className="flex-1 bg-black/40"
+            onPress={() => setMenuOpen(false)}
+          >
+            <Pressable onPress={(e) => e.stopPropagation()}>
+              <View className="bg-white rounded-b-3xl overflow-hidden" style={taskerShadow}>
+                {/* Modal Header */}
+                <View className="flex-row items-center justify-between px-5 pt-5 pb-4 border-b border-[#E7EEFF]">
+                  <View>
+                    <Text className="text-[#3525CD] text-[22px] font-extrabold">Taskly</Text>
+                    <Text className="text-[#464555] text-[12px] mt-0.5">Điều hướng nhanh</Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setMenuOpen(false)}
+                    className="w-9 h-9 rounded-full bg-[#F0F3FF] items-center justify-center"
+                  >
+                    <X size={18} color={TASKER_COLORS.primary} />
+                  </TouchableOpacity>
+                </View>
+                {/* Menu Items */}
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  contentContainerClassName="pb-4"
+                >
+                  {menuItems.map((item, index) => (
+                    <MenuRow
+                      key={item.screen}
+                      item={item}
+                      onPress={() => navigate(item.screen)}
+                      isLast={index === menuItems.length - 1}
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-6 pb-10">
+          {/* Greeting */}
+          <View className="mb-6">
+            <Text className="text-[#111C2D] text-[28px] font-extrabold">
+              Chào buổi sáng, {profile.displayName}!
+            </Text>
+            <Text className="text-[#464555] text-[15px] mt-1">
+              Hôm nay bạn có 3 công việc mới cần hoàn thành.
+            </Text>
+          </View>
+
+          {/* Stats Cards */}
+          <View className="gap-4 mb-8">
+            <TouchableOpacity onPress={() => navigate('earnings')} activeOpacity={0.9}>
+              <LinearGradient
+                colors={[TASKER_COLORS.primary, TASKER_COLORS.secondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[
+                  taskerShadow,
+                  { borderRadius: 20, minHeight: 152, padding: 24, overflow: 'hidden' },
+                ]}
+              >
+                {/* Decorative background icon */}
+                <View style={{ position: 'absolute', right: 16, top: 16, opacity: 0.12 }}>
+                  <Banknote size={110} color="#FFFFFF" />
+                </View>
+
+                {/* Label */}
+                <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+                  Thu nhập hôm nay
+                </Text>
+
+                {/* Amount + trend */}
+                <View style={{ marginTop: 20 }}>
+                  <Text style={{ color: '#FFFFFF', fontSize: 38, fontWeight: '800', lineHeight: 44 }}>
+                    {profile.todayIncome}
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 }}>
+                      <TrendingUp size={12} color="#FFFFFF" />
+                      <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>+15%</Text>
+                    </View>
+                    <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12 }}>so với hôm qua</Text>
+                  </View>
+                </View>
+              </LinearGradient>
             </TouchableOpacity>
-            <View className="w-10 h-10 rounded-full bg-[#E2DFFF] border-2 border-[#4F46E5] items-center justify-center">
-              <UserRound size={18} color={TASKER_COLORS.primary} />
-            </View>
-          </View>
-        }
-      />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-6 pb-10">
-        <View className="mb-6">
-          <Text className="text-[#111C2D] text-[28px] font-extrabold">
-            Chào buổi sáng, {profile.displayName}!
-          </Text>
-          <Text className="text-[#464555] text-[15px] mt-1">
-            Hôm nay bạn có 3 công việc mới cần hoàn thành.
-          </Text>
-        </View>
 
-        <View className="gap-4 mb-8">
-          <TouchableOpacity onPress={() => navigate('earnings')} activeOpacity={0.9}>
-            <LinearGradient
-              colors={[TASKER_COLORS.primary, TASKER_COLORS.secondary]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              className="rounded-xl p-6 min-h-[160px] justify-between"
-              style={taskerShadow}
-            >
-              <View className="flex-row justify-between items-start">
-                <Text className="text-white/90 text-[12px] font-bold uppercase tracking-wider">Thu nhập hôm nay</Text>
-                <Banknote size={48} color="rgba(255,255,255,0.25)" />
-              </View>
-              <View>
-                <Text className="text-white text-[32px] font-extrabold">{profile.todayIncome}</Text>
-                <View className="flex-row items-center gap-1 mt-1">
-                  <TrendingUp size={14} color="#FFFFFF" />
-                  <Text className="text-white text-[12px] font-semibold">+15% so với hôm qua</Text>
-                </View>
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <View className="flex-row gap-4">
-            <TaskerCard className="flex-1 p-4">
-              <View className="flex-row items-center gap-3">
-                <IconTile icon={CheckCircle2} />
-                <View>
+            <View className="flex-row gap-3">
+              <TaskerCard className="flex-1 p-4">
+                <View className="gap-2">
+                  <CheckCircle2 size={22} color={TASKER_COLORS.primary} />
                   <Text className="text-[#464555] text-[12px] font-semibold">Đã hoàn thành</Text>
-                  <Text className="text-[#111C2D] text-[24px] font-extrabold">24</Text>
-                </View>
-              </View>
-            </TaskerCard>
-            <TaskerCard className="flex-1 p-4">
-              <View className="flex-row items-center gap-3">
-                <IconTile icon={Star} tone="tertiary" />
-                <View>
-                  <Text className="text-[#464555] text-[12px] font-semibold">Tỷ lệ thành công</Text>
-                  <Text className="text-[#111C2D] text-[24px] font-extrabold">{profile.successRate}</Text>
-                </View>
-              </View>
-            </TaskerCard>
-          </View>
-
-          <TaskerCard className="p-4 bg-[#DEE8FF]">
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center gap-3">
-                <View className="w-2 h-2 rounded-full bg-green-500" />
-                <Text className="text-[#111C2D] font-bold">Trực tuyến</Text>
-              </View>
-              <View className="w-12 h-7 rounded-full bg-[#3525CD] p-1 items-end">
-                <View className="w-5 h-5 rounded-full bg-white" />
-              </View>
-            </View>
-          </TaskerCard>
-        </View>
-
-        <SectionTitle title="Lối tắt kiểm thử" action="12 màn" />
-        <View className="flex-row flex-wrap gap-3 mb-8">
-          <QuickAction icon={Search} label="Nearby Tasks" onPress={() => navigate('nearby')} />
-          <QuickAction icon={ListChecks} label="Task Detail" onPress={() => navigate('detail')} />
-          <QuickAction icon={ShieldCheck} label="Accept Task" onPress={() => navigate('accept')} />
-          <QuickAction icon={CheckCircle2} label="My Accepted" onPress={() => navigate('accepted')} />
-          <QuickAction icon={History} label="Task History" onPress={() => navigate('history')} />
-          <QuickAction icon={MessageCircle} label="Messages" onPress={() => navigate('messages')} />
-          <QuickAction icon={Bell} label="Notifications" onPress={() => navigate('notifications')} />
-          <QuickAction icon={WalletCards} label="Earnings" onPress={() => navigate('earnings')} />
-          <QuickAction icon={Star} label="Reviews" onPress={() => navigate('reviews')} />
-          <QuickAction icon={CalendarDays} label="Schedule" onPress={() => navigate('schedule')} />
-        </View>
-
-        <View className="mb-8">
-          <View className="flex-row items-end justify-between mb-4">
-            <Text className="text-[#111C2D] text-[20px] font-extrabold">Biểu đồ hiệu suất</Text>
-            <View className="flex-row gap-2">
-              <TaskerPill>Tuần này</TaskerPill>
-              <TaskerPill tone="neutral">Tháng này</TaskerPill>
-            </View>
-          </View>
-          <MiniBarChart values={chartValues} />
-        </View>
-
-        <SectionTitle title="Công việc sắp tới" action="Xem tất cả" />
-        <View className="gap-4">
-          {upcoming.map((task, index) => (
-            <TouchableOpacity key={task.id} onPress={() => navigate(index === 0 ? 'detail' : 'nearby')} activeOpacity={0.86}>
-              <TaskerCard className="p-4">
-                <View className="flex-row justify-between items-start mb-3">
-                  <TaskerPill tone={index === 0 ? 'secondary' : index === 1 ? 'primary' : 'tertiary'}>{task.category}</TaskerPill>
-                  <Text className="text-[#3525CD] font-extrabold">{task.price}</Text>
-                </View>
-                <Text className="text-[#111C2D] font-bold text-[15px] mb-2">{task.title}</Text>
-                <View className="flex-row items-center gap-4">
-                  <View className="flex-row items-center gap-1">
-                    <Clock size={14} color={TASKER_COLORS.muted} />
-                    <Text className="text-[#464555] text-[12px]">{task.time}</Text>
-                  </View>
-                  <View className="flex-row items-center gap-1">
-                    <MapPinned size={14} color={TASKER_COLORS.muted} />
-                    <Text className="text-[#464555] text-[12px]">{task.distance}</Text>
-                  </View>
+                  <Text className="text-[#111C2D] text-[28px] font-extrabold">24</Text>
                 </View>
               </TaskerCard>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <TouchableOpacity onPress={() => navigate('nearby')} activeOpacity={0.9} className="mt-6">
-          <TaskerCard className="p-5 bg-[#E7EEFF] border-dashed">
-            <View className="items-center gap-2">
-              <View className="w-12 h-12 rounded-full bg-[#E2DFFF] items-center justify-center">
-                <Navigation size={22} color={TASKER_COLORS.primary} />
-              </View>
-              <Text className="text-[#111C2D] font-bold">Tìm việc mới quanh bạn</Text>
-              <Text className="text-[#464555] text-[12px] text-center">Mở bản đồ công việc gần đây và các bộ lọc giống Stitch.</Text>
+              <TaskerCard className="flex-1 p-4">
+                <View className="gap-2">
+                  <Star size={22} color={TASKER_COLORS.secondary} />
+                  <Text className="text-[#464555] text-[12px] font-semibold">Tỷ lệ thành công</Text>
+                  <Text className="text-[#111C2D] text-[28px] font-extrabold">{profile.successRate}</Text>
+                </View>
+              </TaskerCard>
             </View>
-          </TaskerCard>
-        </TouchableOpacity>
-      </ScrollView>
+
+            {/* Online Toggle */}
+            <TaskerCard className="p-4 bg-[#DEE8FF]">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center gap-3">
+                  <View className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                  <View>
+                    <Text className="text-[#111C2D] font-extrabold">Trực tuyến</Text>
+                    <Text className="text-[#464555] text-[12px] mt-0.5">Đang nhận việc mới</Text>
+                  </View>
+                </View>
+                <View className="w-14 h-8 rounded-full bg-[#3525CD] p-1 items-end">
+                  <View className="w-6 h-6 rounded-full bg-white" />
+                </View>
+              </View>
+            </TaskerCard>
+          </View>
+
+          {/* Performance Chart */}
+          <View className="mb-8">
+            <View className="flex-row items-end justify-between mb-4">
+              <Text className="text-[#111C2D] text-[20px] font-extrabold">Biểu đồ hiệu suất</Text>
+              <View className="flex-row gap-2">
+                <TaskerPill>Tuần này</TaskerPill>
+                <TaskerPill tone="neutral">Tháng này</TaskerPill>
+              </View>
+            </View>
+            <MiniBarChart values={chartValues} />
+          </View>
+
+          {/* Upcoming Tasks */}
+          <SectionTitle title="Công việc sắp tới" action="Xem tất cả" />
+          <View className="gap-4">
+            {upcoming.map((task, index) => (
+              <TouchableOpacity key={task.id} onPress={() => navigate(index === 0 ? 'detail' : 'nearby')} activeOpacity={0.86}>
+                <TaskerCard className="p-4">
+                  <View className="flex-row justify-between items-start mb-3">
+                    <TaskerPill tone={index === 0 ? 'secondary' : index === 1 ? 'primary' : 'tertiary'}>{task.category}</TaskerPill>
+                    <Text className="text-[#3525CD] font-extrabold">{task.price}</Text>
+                  </View>
+                  <Text className="text-[#111C2D] font-bold text-[15px] mb-2">{task.title}</Text>
+                  <View className="flex-row items-center gap-4">
+                    <View className="flex-row items-center gap-1">
+                      <Clock size={14} color={TASKER_COLORS.muted} />
+                      <Text className="text-[#464555] text-[12px]">{task.time}</Text>
+                    </View>
+                    <View className="flex-row items-center gap-1">
+                      <MapPinned size={14} color={TASKER_COLORS.muted} />
+                      <Text className="text-[#464555] text-[12px]">{task.distance}</Text>
+                    </View>
+                  </View>
+                </TaskerCard>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Find Nearby CTA */}
+          <TouchableOpacity onPress={() => navigate('nearby')} activeOpacity={0.9} className="mt-6">
+            <TaskerCard className="p-5 bg-[#E7EEFF] border-dashed">
+              <View className="items-center gap-2">
+                <View className="w-12 h-12 rounded-full bg-[#E2DFFF] items-center justify-center">
+                  <Navigation size={22} color={TASKER_COLORS.primary} />
+                </View>
+                <Text className="text-[#111C2D] font-bold">Tìm việc mới quanh bạn</Text>
+                <Text className="text-[#464555] text-[12px] text-center">Mở bản đồ công việc gần đây và các bộ lọc.</Text>
+              </View>
+            </TaskerCard>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
     </TaskerScreenFrame>
   );
@@ -256,7 +322,6 @@ export function TaskerHomeScreen() {
 
 function getBottomTab(screen: TaskerScreenKey): TaskerBottomTabKey {
   if (screen === 'nearby' || screen === 'detail' || screen === 'accepted' || screen === 'messages' || screen === 'notifications') return 'nearby';
-  if (screen === 'accept') return 'accept';
   if (screen === 'history') return 'history';
   if (screen === 'profile' || screen === 'earnings' || screen === 'reviews' || screen === 'schedule') return 'profile';
   return 'dashboard';
@@ -279,18 +344,30 @@ function TaskerScreenFrame({
   );
 }
 
-function QuickAction({ icon: Icon, label, onPress }: { icon: TaskerIcon; label: string; onPress: () => void }) {
+function MenuRow({
+  item,
+  onPress,
+  isLast,
+}: {
+  item: { icon: TaskerIcon; label: string; sublabel: string };
+  onPress: () => void;
+  isLast: boolean;
+}) {
+  const Icon = item.icon;
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.82}
-      className="bg-white border border-[#C7C4D8] rounded-xl p-3 w-[31%] min-h-[94px] items-center justify-center"
-      style={taskerShadow}
+      activeOpacity={0.7}
+      className={`flex-row items-center px-5 py-3.5 gap-4 ${isLast ? '' : 'border-b border-[#F0F3FF]'}`}
     >
-      <Icon size={22} color={TASKER_COLORS.primary} />
-      <Text className="text-[#111C2D] text-[11px] font-bold text-center mt-2" numberOfLines={2}>
-        {label}
-      </Text>
+      <View className="w-10 h-10 rounded-xl bg-[#E2DFFF] items-center justify-center">
+        <Icon size={19} color={TASKER_COLORS.primary} />
+      </View>
+      <View className="flex-1">
+        <Text className="text-[#111C2D] font-semibold text-[14px]">{item.label}</Text>
+        <Text className="text-[#777587] text-[12px] mt-0.5" numberOfLines={1}>{item.sublabel}</Text>
+      </View>
+      <ChevronRight size={17} color="#C7C4D8" />
     </TouchableOpacity>
   );
 }

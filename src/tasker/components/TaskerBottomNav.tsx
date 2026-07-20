@@ -1,4 +1,4 @@
-import { Clock3, Home, Plus, Search, UserRound } from 'lucide-react-native';
+import { Clock3, Home, Search, UserRound } from 'lucide-react-native';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { TASKER_COLORS, taskerShadow } from '../taskerTheme';
 import type { TaskerBottomTabKey, TaskerIcon } from '../types';
@@ -8,38 +8,28 @@ type TaskerBottomNavProps = {
   onSelect: (tab: TaskerBottomTabKey) => void;
 };
 
-const navItems: { key: Exclude<TaskerBottomTabKey, 'accept'>; label: string; icon: TaskerIcon }[] = [
+const navItems: { key: TaskerBottomTabKey; label: string; icon: TaskerIcon }[] = [
   { key: 'dashboard', label: 'Home', icon: Home },
-  { key: 'nearby', label: 'Search', icon: Search },
-  { key: 'history', label: 'History', icon: Clock3 },
-  { key: 'profile', label: 'Profile', icon: UserRound },
+  { key: 'nearby', label: 'Tìm việc', icon: Search },
+  { key: 'history', label: 'Lịch sử', icon: Clock3 },
+  { key: 'profile', label: 'Hồ sơ', icon: UserRound },
 ];
 
 export function TaskerBottomNav({ active, onSelect }: TaskerBottomNavProps) {
   return (
-    <View className="bg-white rounded-t-xl border-t border-[#E7EEFF] px-1 pt-2 pb-3" style={taskerShadow}>
-      <View className="h-16 flex-row items-center">
-        <NavItem item={navItems[0]} active={active === 'dashboard'} onPress={() => onSelect('dashboard')} />
-        <NavItem item={navItems[1]} active={active === 'nearby'} onPress={() => onSelect('nearby')} />
-        <TouchableOpacity
-          activeOpacity={0.86}
-          onPress={() => onSelect('accept')}
-          className="flex-1 items-center justify-center"
-        >
-          <View className="-mt-7 w-12 h-12 rounded-full bg-[#3525CD] border-4 border-white items-center justify-center shadow-lg">
-            <Plus size={24} color="#FFFFFF" strokeWidth={2.6} />
-          </View>
-          <Text
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.82}
-            className={`text-[9px] font-bold mt-1 text-center ${active === 'accept' ? 'text-[#3525CD]' : 'text-[#464555]'}`}
-          >
-            Create
-          </Text>
-        </TouchableOpacity>
-        <NavItem item={navItems[2]} active={active === 'history'} onPress={() => onSelect('history')} />
-        <NavItem item={navItems[3]} active={active === 'profile'} onPress={() => onSelect('profile')} />
+    <View
+      className="bg-white border-t border-[#E7EEFF] px-2 pt-2 pb-3"
+      style={taskerShadow}
+    >
+      <View className="h-14 flex-row items-stretch">
+        {navItems.map((item) => (
+          <NavItem
+            key={item.key}
+            item={item}
+            active={active === item.key}
+            onPress={() => onSelect(item.key)}
+          />
+        ))}
       </View>
     </View>
   );
@@ -55,16 +45,24 @@ function NavItem({
   onPress: () => void;
 }) {
   const Icon = item.icon;
-  const color = active ? TASKER_COLORS.primary : TASKER_COLORS.muted;
+  const color = active ? TASKER_COLORS.primary : '#777587';
 
   return (
-    <TouchableOpacity activeOpacity={0.78} onPress={onPress} className="flex-1 items-center justify-center px-0.5">
-      <Icon size={19} color={color} strokeWidth={active ? 2.8 : 2} />
+    <TouchableOpacity
+      activeOpacity={0.75}
+      onPress={onPress}
+      className="flex-1 items-center justify-center gap-0.5"
+    >
+      <View
+        className={`w-10 h-8 rounded-full items-center justify-center ${active ? 'bg-[#E2DFFF]' : ''}`}
+      >
+        <Icon size={20} color={color} strokeWidth={active ? 2.8 : 2} />
+      </View>
       <Text
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.78}
-        className={`text-[9px] font-bold mt-1 text-center w-full ${active ? 'text-[#3525CD]' : 'text-[#464555]'}`}
+        className={`text-[10px] font-bold text-center ${active ? 'text-[#3525CD]' : 'text-[#777587]'}`}
       >
         {item.label}
       </Text>
