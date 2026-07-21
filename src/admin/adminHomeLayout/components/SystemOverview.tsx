@@ -216,6 +216,52 @@ export function SystemOverview({
           <Text className="text-purple-600 font-bold text-xs">Xem tất cả thông báo &gt;</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Dispute & Refund Resolution System */}
+      <View className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm shadow-slate-100/50">
+        <View className="flex-row items-center justify-between mb-4">
+          <View className="flex-row items-center gap-2">
+            <Text className="text-[15px] font-bold text-slate-800">Xử lý Tranh chấp & Hoàn tiền (Escrow)</Text>
+            <View className="bg-amber-100 px-2 py-0.5 rounded-full">
+              <Text className="text-[10px] font-extrabold text-amber-800">1 Tranh chấp cần xử lý</Text>
+            </View>
+          </View>
+        </View>
+
+        <View className="p-4 rounded-xl border border-amber-200 bg-amber-50/40">
+          <View className="flex-row justify-between items-center mb-2">
+            <Text className="font-bold text-slate-800 text-sm">Mã Task: #TK-9021 • Dọn dẹp căn hộ 2PN</Text>
+            <Text className="text-xs font-bold text-amber-800">Escrow: 500.000đ</Text>
+          </View>
+          
+          <Text className="text-xs text-slate-600 mb-1">
+            <Text className="font-bold">Khách khiếu nại (Chị Mai Anh):</Text> &quot;Tasker làm chưa sạch phòng bếp và tự ý về sớm.&quot;
+          </Text>
+          <Text className="text-xs text-slate-600 mb-3">
+            <Text className="font-bold">Tasker giải trình (Minh Đức):</Text> &quot;Em đã lau dọn đủ 3 giờ và chụp ảnh nghiệm thu làm bằng chứng.&quot;
+          </Text>
+
+          <View className="flex-row gap-2">
+            <TouchableOpacity
+              onPress={() => {
+                alert('Đã xử lý HOÀN TIỀN 100% (500.000đ) cho Khách hàng!');
+              }}
+              className="flex-1 bg-rose-600 py-2.5 rounded-lg items-center"
+            >
+              <Text className="text-white text-xs font-bold">Hoàn tiền 100% cho Khách</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                alert('Đã xử lý GIẢI NGÂN (500.000đ) cho Tasker Minh Đức!');
+              }}
+              className="flex-1 bg-emerald-600 py-2.5 rounded-lg items-center"
+            >
+              <Text className="text-white text-xs font-bold">Giải ngân cho Tasker</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
     </ScrollView>
   );
 }

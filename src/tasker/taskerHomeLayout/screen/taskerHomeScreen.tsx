@@ -32,23 +32,17 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { mockTaskerData } from "../../../../mockdata";
 import { TaskerBottomNav } from "../../components/TaskerBottomNav";
-import {
-  MessagesScreen,
-  NotificationsScreen,
-} from "../../taskerMessagesLayout";
-import {
-  EarningsDashboardScreen,
-  ReviewsRatingsScreen,
-  ScheduleCalendarScreen,
-  TaskerProfileScreen,
-} from "../../taskerProfileLayout";
-import {
-  AcceptTaskScreen,
-  MyAcceptedTasksScreen,
-  NearbyTasksScreen,
-  TaskDetailScreen,
-  TaskHistoryScreen,
-} from "../../taskerTasksLayout";
+import { MessagesScreen } from "../../taskerMessagesLayout/screen/messagesScreen";
+import { NotificationsScreen } from "../../taskerMessagesLayout/screen/notificationsScreen";
+import { EarningsDashboardScreen } from "../../taskerProfileLayout/screen/earningsDashboardScreen";
+import { ReviewsRatingsScreen } from "../../taskerProfileLayout/screen/reviewsRatingsScreen";
+import { ScheduleCalendarScreen } from "../../taskerProfileLayout/screen/scheduleCalendarScreen";
+import { TaskerProfileScreen } from "../../taskerProfileLayout/screen/taskerProfileScreen";
+import { AcceptTaskScreen } from "../../taskerTasksLayout/screen/acceptTaskScreen";
+import { MyAcceptedTasksScreen } from "../../taskerTasksLayout/screen/myAcceptedTasksScreen";
+import { NearbyTasksScreen } from "../../taskerTasksLayout/screen/nearbyTasksScreen";
+import { TaskDetailScreen } from "../../taskerTasksLayout/screen/taskDetailScreen";
+import { TaskHistoryScreen } from "../../taskerTasksLayout/screen/taskHistoryScreen";
 import { TASKER_COLORS, taskerShadow } from "../../taskerTheme";
 import type {
   TaskerBottomTabKey,

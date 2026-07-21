@@ -1,8 +1,8 @@
-export * from "./screen/clientAISmartPriceScreen";
-export * from "./screen/clientCheckoutScreen";
-export * from "./screen/clientCreateTaskScreen";
-export * from "./screen/clientFindTasksScreen";
-export * from "./screen/clientHomeScreen";
-export * from "./screen/clientJobDetailsScreen";
-export * from "./screen/clientProfileScreen";
-export * from "./screen/clientTrackingScreen";
+export { default as ClientAISmartPriceScreen } from "./screen/clientAISmartPriceScreen";
+export { default as ClientCheckoutScreen } from "./screen/clientCheckoutScreen";
+export { default as ClientCreateTaskScreen } from "./screen/clientCreateTaskScreen";
+export { default as ClientFindTasksScreen } from "./screen/clientFindTasksScreen";
+export { default as ClientHomeScreen } from "./screen/clientHomeScreen";
+export { default as ClientJobDetailsScreen } from "./screen/clientJobDetailsScreen";
+export { default as ClientProfileScreen } from "./screen/clientProfileScreen";
+export { default as ClientTrackingScreen } from "./screen/clientTrackingScreen";

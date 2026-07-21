@@ -20,7 +20,11 @@ import { clearAuthSession } from "../../session";
 import Colors from "../constants/Colors";
 import Layout from "../constants/Layout";
 
-export default function ClientProfileScreen() {
+type ClientProfileScreenProps = {
+  session?: any;
+};
+
+export default function ClientProfileScreen({ session }: ClientProfileScreenProps = {}) {
   const router = useRouter();
 
   const handleLogout = () => {

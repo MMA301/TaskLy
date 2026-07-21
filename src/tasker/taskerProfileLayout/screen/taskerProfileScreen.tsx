@@ -1,13 +1,15 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Bell, CheckCircle2, ChevronRight, Headphones, Lock, LogOut, UserRound, WalletCards, Wrench } from 'lucide-react-native';
+import { Bell, CheckCircle2, ChevronRight, Headphones, Lock, LogOut, UserRound, WalletCards, Wrench, ShieldCheck, X, Upload } from 'lucide-react-native';
 import { useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View, Modal, Image, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { mockTaskerData } from '../../../../mockdata';
 import { IconTile, TaskerCard, TaskerHeader, TaskerPill } from '../../taskerHomeLayout/components/TaskerPrimitives';
 import { TASKER_COLORS, taskerShadow } from '../../taskerTheme';
 import type { TaskerIcon, TaskerScreenKey } from '../../types';
-import { AcceptTaskScreen, NearbyTasksScreen, TaskHistoryScreen } from '../../taskerTasksLayout';
+import { AcceptTaskScreen } from '../../taskerTasksLayout/screen/acceptTaskScreen';
+import { NearbyTasksScreen } from '../../taskerTasksLayout/screen/nearbyTasksScreen';
+import { TaskHistoryScreen } from '../../taskerTasksLayout/screen/taskHistoryScreen';
 import { EarningsDashboardScreen } from './earningsDashboardScreen';
 import { ReviewsRatingsScreen } from './reviewsRatingsScreen';
 import { ScheduleCalendarScreen } from './scheduleCalendarScreen';
@@ -21,6 +23,8 @@ type ProfileLocalScreen = 'profile' | 'earnings' | 'reviews' | 'schedule' | 'nea
 export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenProps) {
   const router = useRouter();
   const [screen, setScreen] = useState<ProfileLocalScreen>('profile');
+  const [kycStatus, setKycStatus] = useState<string>(mockTaskerData.profile.kycStatus || 'verified');
+  const [kycModalVisible, setKycModalVisible] = useState<boolean>(false);
   const back = () => setScreen('profile');
   const navigate = (next: TaskerScreenKey) => {
     if (next === 'earnings' || next === 'reviews' || next === 'schedule' || next === 'nearby' || next === 'accept' || next === 'history') {
@@ -136,6 +140,33 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
 
 
         <TaskerCard className="p-4 mb-5">
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className="text-[#111C2D] text-[20px] font-extrabold">Xác minh Danh tính (KYC)</Text>
+            <View className={`px-3 py-1 rounded-full ${kycStatus === 'verified' ? 'bg-green-100' : kycStatus === 'pending' ? 'bg-amber-100' : 'bg-red-100'}`}>
+              <Text className={`text-[12px] font-extrabold ${kycStatus === 'verified' ? 'text-green-700' : kycStatus === 'pending' ? 'text-amber-700' : 'text-red-700'}`}>
+                {kycStatus === 'verified' ? '✓ Đã xác minh' : kycStatus === 'pending' ? '⏳ Đang chờ duyệt' : '⚠️ Chưa xác minh'}
+              </Text>
+            </View>
+          </View>
+          
+          <Text className="text-[#464555] text-[13px] mb-3">
+            Trường: <Text className="font-bold text-[#111C2D]">{profile.university || 'Đại học Bách Khoa TP.HCM'}</Text>
+          </Text>
+          <Text className="text-[#464555] text-[13px] mb-4">
+            Mã sinh viên: <Text className="font-bold text-[#111C2D]">{profile.studentId || 'SV-2023884'}</Text>
+          </Text>
+
+          <TouchableOpacity
+            onPress={() => setKycModalVisible(true)}
+            className="w-full bg-[#3525CD] py-3 rounded-xl items-center"
+          >
+            <Text className="text-white font-bold">
+              {kycStatus === 'verified' ? 'Xem Hồ sơ CCCD / Thẻ SV' : kycStatus === 'pending' ? 'Xem trạng thái yêu cầu KYC' : 'Gửi ảnh CCCD & Thẻ Sinh viên'}
+            </Text>
+          </TouchableOpacity>
+        </TaskerCard>
+
+        <TaskerCard className="p-4 mb-5">
           <Text className="text-[#111C2D] text-[20px] font-extrabold mb-4">Kỹ năng</Text>
           <View className="flex-row flex-wrap gap-2">
             {profile.skills.map((skill) => <TaskerPill key={skill}>{skill}</TaskerPill>)}
@@ -187,6 +218,68 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
 
         </TouchableOpacity>
       </ScrollView>
+
+      {/* KYC Verification Modal */}
+      <Modal visible={kycModalVisible} animationType="slide" transparent>
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-white rounded-t-3xl p-5 max-h-[85%]">
+            <View className="flex-row items-center justify-between border-b border-gray-100 pb-3 mb-4">
+              <View className="flex-row items-center gap-2">
+                <ShieldCheck size={24} color="#3525CD" />
+                <Text className="text-[#111C2D] text-[18px] font-bold">Xác minh Danh tính Sinh viên</Text>
+              </View>
+              <TouchableOpacity onPress={() => setKycModalVisible(false)} className="p-1 bg-gray-100 rounded-full">
+                <X size={20} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-6">
+              <Text className="text-gray-600 text-sm mb-4">
+                Hệ thống yêu cầu xác minh Căn cước công dân & Thẻ Sinh viên để bảo đảm uy tín cho Tasker và quyền lợi nhận task ngắn hạn.
+              </Text>
+
+              <Text className="font-bold text-gray-800 text-base mb-2">1. Mặt trước CCCD / CMND</Text>
+              <View className="w-full h-44 bg-gray-100 rounded-xl overflow-hidden border border-dashed border-gray-300 items-center justify-center mb-4">
+                <Image
+                  source={{ uri: profile.kycCardImage }}
+                  className="w-full h-full"
+                  resizeMode="cover"
+                />
+              </View>
+
+              <Text className="font-bold text-gray-800 text-base mb-2">2. Thẻ Sinh viên (Đại học/Cao đẳng)</Text>
+              <View className="w-full h-44 bg-gray-100 rounded-xl overflow-hidden border border-dashed border-gray-300 items-center justify-center mb-5">
+                <Image
+                  source={{ uri: profile.studentCardImage }}
+                  className="w-full h-full"
+                  resizeMode="cover"
+                />
+              </View>
+
+              {kycStatus === 'pending' ? (
+                <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                  <Text className="text-amber-800 font-bold text-sm">⏳ Yêu cầu KYC đang được Admin duyệt</Text>
+                  <Text className="text-amber-700 text-xs mt-1">
+                    Thời gian xét duyệt trung bình từ 15-30 phút. Bạn sẽ nhận được thông báo khi hoàn tất.
+                  </Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => {
+                    setKycStatus('pending');
+                    Alert.alert('Thành công', 'Đã gửi ảnh CCCD & Thẻ Sinh viên tới Admin để phê duyệt!');
+                    setKycModalVisible(false);
+                  }}
+                  className="bg-[#3525CD] py-3.5 rounded-xl items-center flex-row justify-center gap-2"
+                >
+                  <Upload size={18} color="#FFFFFF" />
+                  <Text className="text-white font-bold text-base">Gửi duyệt KYC ngay</Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

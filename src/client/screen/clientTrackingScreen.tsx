@@ -1,13 +1,16 @@
-// screens/TrackingScreen.js
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  Alert,
   Image,
+  Modal,
   SafeAreaView,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -19,9 +22,46 @@ import Layout from "../constants/Layout";
 export default function ClientTrackingScreen() {
   const router = useRouter();
   const [isSheetExpanded, setIsSheetExpanded] = useState(true);
+  const [proofModalVisible, setProofModalVisible] = useState(false);
+  const [disputeModalVisible, setDisputeModalVisible] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("Tasker đến muộn và bỏ dở công việc chưa hoàn thành xong phòng ngủ.");
+  const [escrowReleased, setEscrowReleased] = useState(false);
 
   const toggleSheet = () => {
     setIsSheetExpanded(!isSheetExpanded);
+  };
+
+  const handleReleaseEscrow = () => {
+    Alert.alert(
+      "Giải ngân Escrow",
+      "Bạn xác nhận đã nghiệm thu công việc thành công. Số tiền 500.000đ từ Ví Escrow sẽ được chuyển ngay cho Tasker!",
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xác nhận & Giải ngân",
+          onPress: () => {
+            setEscrowReleased(true);
+            Alert.alert("Thành công", "Đã giải ngân tiền thành công cho Tasker!");
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSendDispute = () => {
+    Alert.alert(
+      "Đã gửi Khiếu nại",
+      "Yêu cầu tranh chấp của bạn đã được gửi tới Admin Taskly. Bộ phận CSKH sẽ xem xét bằng chứng và liên hệ trong 15 phút!",
+      [{ text: "Đóng", onPress: () => setDisputeModalVisible(false) }]
+    );
+  };
+
+  const handleClientSos = () => {
+    Alert.alert(
+      "🔴 CẢNH BÁO SOS KHẨN CẤP",
+      "Đã phát thông báo khẩn cấp tới Hotline Taskly 24/7 và đồn Công An gần nhất!",
+      [{ text: "Đóng" }]
+    );
   };
 
   return (
@@ -61,7 +101,7 @@ export default function ClientTrackingScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={Colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Theo dõi Task</Text>
+        <Text style={styles.headerTitle}>Theo dõi Task & Escrow</Text>
         <TouchableOpacity style={styles.profileBtn}>
           <Image
             source={{
@@ -76,12 +116,17 @@ export default function ClientTrackingScreen() {
       <View style={styles.statusBadgeContainer}>
         <View style={styles.statusBadge}>
           <View style={styles.greenPulseDot} />
-          <Text style={styles.statusBadgeText}>ĐANG GIAO HÀNG</Text>
+          <Text style={styles.statusBadgeText}>
+            {escrowReleased ? "ĐÃ HOÀN THÀNH & GIẢI NGÂN" : "ĐANG THỰC HIỆN • VÍ ESCROW GIỮ TẠM"}
+          </Text>
         </View>
       </View>
 
-      {/* Floating Map Zoom/Utility Buttons */}
+      {/* Floating Map Zoom/Utility Buttons & SOS */}
       <View style={styles.mapUtilityColumn}>
+        <TouchableOpacity style={[styles.utilityBtn, { backgroundColor: '#FEE2E2', borderColor: '#EF4444', borderWidth: 1 }]} onPress={handleClientSos}>
+          <Ionicons name="warning" size={22} color="#DC2626" />
+        </TouchableOpacity>
         <TouchableOpacity style={styles.utilityBtn}>
           <Ionicons name="add" size={20} color={Colors.onSurfaceVariant} />
         </TouchableOpacity>
@@ -98,7 +143,7 @@ export default function ClientTrackingScreen() {
         style={[
           styles.bottomSheet,
           isSheetExpanded
-            ? styles.bottomSheetExpanded
+            ? { height: 480 }
             : styles.bottomSheetCollapsed,
         ]}
       >
@@ -124,35 +169,62 @@ export default function ClientTrackingScreen() {
           </View>
 
           <View style={styles.taskerTextInfo}>
-            <Text style={styles.taskerName}>Nguyễn Văn Nam</Text>
+            <Text style={styles.taskerName}>Nguyễn Minh Đức (Sinh viên Bách Khoa)</Text>
             <View style={styles.taskerRatingRow}>
               <Ionicons name="star" size={14} color={Colors.star} />
               <Text style={styles.taskerRatingText}>4.9</Text>
               <Text style={styles.statsSeparator}>•</Text>
               <Text style={styles.taskerCompletedText}>
-                1,240 Task hoàn thành
+                128 Task • KYC Verified
               </Text>
             </View>
-            <View style={styles.verifiedBadge}>
-              <Text style={styles.verifiedBadgeText}>Verified Pro</Text>
+            <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
+              <View style={styles.verifiedBadge}>
+                <Text style={styles.verifiedBadgeText}>✓ Sinh viên KYC</Text>
+              </View>
+              <View style={{ backgroundColor: '#DCFCE7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#166534' }}>🛡️ Escrow 500k</Text>
+              </View>
             </View>
           </View>
         </View>
 
         {isSheetExpanded && (
-          <>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
             <View style={styles.divider} />
 
-            {/* Timing & Distance ETA Panel */}
-            <View style={styles.etaPanel}>
-              <Text style={styles.etaLabel}>DỰ KIẾN ĐẾN</Text>
-              <Text style={styles.etaTimer}>
-                12 <Text style={styles.etaUnit}>phút</Text>
-              </Text>
-              <Text style={styles.etaSubText}>Quãng đường: 3.2km</Text>
+            {/* Proof of Work & Escrow Buttons Row */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              <TouchableOpacity
+                onPress={() => setProofModalVisible(true)}
+                style={{ flex: 1, backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#3B82F6', paddingVertical: 10, borderRadius: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
+              >
+                <Ionicons name="images" size={18} color="#2563EB" />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#2563EB' }}>Xem ảnh Nghiệm thu</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setDisputeModalVisible(true)}
+                style={{ backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FCA5A5', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#DC2626' }}>Khiếu nại</Text>
+              </TouchableOpacity>
             </View>
 
-            <View style={styles.divider} />
+            {/* Escrow Action Button */}
+            {!escrowReleased ? (
+              <TouchableOpacity
+                onPress={handleReleaseEscrow}
+                style={{ backgroundColor: '#16A34A', paddingVertical: 14, borderRadius: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 14 }}
+              >
+                <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Nghiệm Thu & Giải Ngân Escrow</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={{ backgroundColor: '#DCFCE7', borderColor: '#86EFAC', borderWidth: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center', marginBottom: 14 }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#15803D' }}>✓ Đã Giải Ngân Tiền Cho Tasker</Text>
+              </View>
+            )}
 
             {/* Quick action buttons row */}
             <View style={styles.actionsRow}>
@@ -170,26 +242,81 @@ export default function ClientTrackingScreen() {
                 style={styles.detailBtn}
                 onPress={() => router.push("/(tabs)/job-details")}
               >
-                <Text style={styles.detailBtnText}>Chi tiết</Text>
+                <Text style={styles.detailBtnText}>Chi tiết Task</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        )}
+      </View>
+
+      {/* Proof of Work Review Modal */}
+      <Modal visible={proofModalVisible} animationType="slide" transparent>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>Ảnh Bằng Chứng Hoàn Thành</Text>
+              <TouchableOpacity onPress={() => setProofModalVisible(false)}>
+                <Ionicons name="close-circle" size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.divider} />
+            <Text style={{ fontSize: 13, color: '#4B5563', marginBottom: 14 }}>
+              Tasker đã tải lên 2 ảnh sau khi vệ sinh xong căn hộ:
+            </Text>
 
-            {/* Bottom Service summary */}
-            <View style={styles.serviceSummary}>
-              <View>
-                <Text style={styles.serviceLabel}>DỊCH VỤ</Text>
-                <Text style={styles.serviceVal}>Giao hàng Nhanh</Text>
-              </View>
-              <View style={styles.alignEnd}>
-                <Text style={styles.serviceLabel}>THANH TOÁN</Text>
-                <Text style={styles.servicePrice}>85.000đ</Text>
-              </View>
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&auto=format&fit=crop' }}
+                style={{ flex: 1, height: 140, borderRadius: 12 }}
+              />
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?w=600&auto=format&fit=crop' }}
+                style={{ flex: 1, height: 140, borderRadius: 12 }}
+              />
             </View>
-          </>
-        )}
-      </View>
+
+            <TouchableOpacity
+              onPress={() => {
+                setProofModalVisible(false);
+                handleReleaseEscrow();
+              }}
+              style={{ backgroundColor: '#16A34A', paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Đã Xem & Đồng Ý Giải Ngân</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Dispute Modal */}
+      <Modal visible={disputeModalVisible} animationType="slide" transparent>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: '#DC2626' }}>Gửi Khiếu Nại / Báo Cáo Sự Cố</Text>
+              <TouchableOpacity onPress={() => setDisputeModalVisible(false)}>
+                <Ionicons name="close-circle" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 12, color: '#4B5563', marginBottom: 6 }}>Lý do khiếu nại:</Text>
+            <TextInput
+              value={disputeReason}
+              onChangeText={setDisputeReason}
+              multiline
+              numberOfLines={4}
+              style={{ backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 12, padding: 12, fontSize: 13, color: '#111827', marginBottom: 16 }}
+            />
+
+            <TouchableOpacity
+              onPress={handleSendDispute}
+              style={{ backgroundColor: '#DC2626', paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Gửi Yêu Cầu Tranh Chấp Cho Admin</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

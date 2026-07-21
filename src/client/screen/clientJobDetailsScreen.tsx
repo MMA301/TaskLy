@@ -166,6 +166,40 @@ export default function ClientJobDetailsScreen() {
           </View>
         </View>
 
+        {/* Counter Offers / Bidding Section */}
+        <View style={styles.card}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: Colors.onSurface }}>Đề Xuất Giá Từ Tasker (Bidding)</Text>
+            <View style={{ backgroundColor: '#F0F3FF', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.primary }}>2 Đề xuất mới</Text>
+            </View>
+          </View>
+
+          <View style={{ backgroundColor: '#F9FAFB', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Image source={{ uri: 'https://api.dicebear.com/7.x/avataaars/png?seed=TaskerMinhDuc' }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                <View>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#111827' }}>Nguyễn Minh Đức</Text>
+                  <Text style={{ fontSize: 11, color: '#6B7280' }}>★ 4.9 • Sinh viên Bách Khoa</Text>
+                </View>
+              </View>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: '#2563EB' }}>600.000đ</Text>
+            </View>
+            <Text style={{ fontSize: 12, color: '#4B5563', marginTop: 8, fontStyle: 'italic' }}>
+              &quot;Tôi mang đầy đủ máy hút bụi công nghiệp &amp; dụng cụ lau kính chuyên dụng.&quot;
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/checkout')} style={{ flex: 1, backgroundColor: '#2563EB', paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFFFFF' }}>Chấp nhận đề xuất</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={{ backgroundColor: '#F3F4F6', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}>
+                <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280' }}>Từ chối</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
         {/* Customer Profile Card */}
         <View style={styles.card}>
           <Text style={styles.customerCardTitle}>Người đăng</Text>

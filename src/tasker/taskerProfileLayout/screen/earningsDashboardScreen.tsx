@@ -1,5 +1,6 @@
-import { Banknote, Briefcase, MoreHorizontal, Package, WalletCards, Wrench } from 'lucide-react-native';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Banknote, Briefcase, MoreHorizontal, Package, WalletCards, Wrench, X, ArrowDownRight, CheckCircle2 } from 'lucide-react-native';
+import { useState } from 'react';
+import { ScrollView, Text, TouchableOpacity, View, Modal, TextInput, Alert } from 'react-native';
 import { mockTaskerData } from '../../../../mockdata';
 import { IconTile, MiniBarChart, TaskerCard, TaskerHeader } from '../../taskerHomeLayout/components/TaskerPrimitives';
 import { TASKER_COLORS } from '../../taskerTheme';
@@ -23,6 +24,39 @@ const weekly = [
 ];
 
 export function EarningsDashboardScreen({ onBack }: TaskerScreenProps) {
+  const [withdrawModalVisible, setWithdrawModalVisible] = useState<boolean>(false);
+  const [withdrawAmount, setWithdrawAmount] = useState<string>('500000');
+  const [selectedBank, setSelectedBank] = useState<string>('Vietcombank - **** 8892');
+  const [transactionsList, setTransactionsList] = useState(mockTaskerData.transactions);
+  const [balance, setBalance] = useState<string>(mockTaskerData.profile.balance);
+
+  const handleWithdraw = () => {
+    const amountNum = parseInt(withdrawAmount.replace(/[^0-9]/g, ''), 10);
+    if (isNaN(amountNum) || amountNum < 50000) {
+      Alert.alert('Lỗi', 'Số tiền rút tối thiểu là 50.000đ');
+      return;
+    }
+
+    // Add transaction
+    const newTx = {
+      id: `tx_${Date.now()}`,
+      title: `Rút tiền về ${selectedBank.split(' - ')[0]}`,
+      subtitle: `Vừa xong • Yêu cầu rút tiền`,
+      amount: `-${amountNum.toLocaleString('vi-VN')}đ`,
+      status: 'Đang xử lý',
+      type: 'outflow',
+      icon: 'bank',
+    };
+
+    setTransactionsList([newTx, ...transactionsList]);
+    const currentNum = parseInt(balance.replace(/[^0-9]/g, ''), 10) || 15450000;
+    const newBalNum = Math.max(0, currentNum - amountNum);
+    setBalance(`${newBalNum.toLocaleString('vi-VN')}đ`);
+
+    Alert.alert('Thành công', `Yêu cầu rút ${amountNum.toLocaleString('vi-VN')}đ đã được chuyển tới ngân hàng!`);
+    setWithdrawModalVisible(false);
+  };
+
   return (
     <View className="flex-1 bg-[#F9F9FF]">
       <TaskerHeader title="Bảng điều khiển thu nhập" subtitle="Chào, Minh Anh" onBack={onBack} />
@@ -32,11 +66,12 @@ export function EarningsDashboardScreen({ onBack }: TaskerScreenProps) {
             <WalletCards size={120} color="#FFFFFF" />
           </View>
           <Text className="text-white/80 text-[12px] font-bold uppercase">Tổng số dư</Text>
-          <Text className="text-white text-[38px] font-extrabold mt-2">{mockTaskerData.profile.balance}</Text>
+          <Text className="text-white text-[38px] font-extrabold mt-2">{balance}</Text>
+          <Text className="text-white/80 text-[12px] font-medium mt-1">Ví Escrow tạm giữ: {mockTaskerData.profile.escrowBalance || '1.250.000đ'}</Text>
           <View className="flex-row gap-2 mt-5">
-            <TouchableOpacity className="bg-white px-4 py-3 rounded-lg flex-row items-center gap-2">
+            <TouchableOpacity onPress={() => setWithdrawModalVisible(true)} className="bg-white px-4 py-3 rounded-lg flex-row items-center gap-2">
               <Banknote size={18} color={TASKER_COLORS.primary} />
-              <Text className="text-[#3525CD] font-bold">Rút tiền</Text>
+              <Text className="text-[#3525CD] font-bold">Rút tiền ngay</Text>
             </TouchableOpacity>
             <TouchableOpacity className="bg-white/20 px-4 py-3 rounded-lg">
               <MoreHorizontal size={18} color="#FFFFFF" />
@@ -68,7 +103,7 @@ export function EarningsDashboardScreen({ onBack }: TaskerScreenProps) {
             <Text className="text-[#111C2D] text-[20px] font-extrabold">Giao dịch gần đây</Text>
             <Text className="text-[#3525CD] font-bold">Xem tất cả</Text>
           </View>
-          {mockTaskerData.transactions.map((tx) => {
+          {transactionsList.map((tx) => {
             const Icon = txIcons[tx.icon] ?? Briefcase;
             const tone = tx.type === 'outflow' ? 'error' : tx.icon === 'delivery' ? 'secondary' : 'primary';
             return (
@@ -82,13 +117,63 @@ export function EarningsDashboardScreen({ onBack }: TaskerScreenProps) {
                 </View>
                 <View className="items-end">
                   <Text className={`font-extrabold ${tx.type === 'inflow' ? 'text-[#3525CD]' : 'text-[#111C2D]'}`}>{tx.amount}</Text>
-                  <Text className={`text-[10px] px-2 py-0.5 rounded mt-1 font-bold ${tx.status === 'Thành công' ? 'text-green-700 bg-green-50' : 'text-[#464555] bg-[#E7EEFF]'}`}>{tx.status}</Text>
+                  <Text className={`text-[10px] px-2 py-0.5 rounded mt-1 font-bold ${tx.status === 'Thành công' ? 'text-green-700 bg-green-50' : 'text-amber-700 bg-amber-50'}`}>{tx.status}</Text>
                 </View>
               </View>
             );
           })}
         </TaskerCard>
       </ScrollView>
+
+      {/* Payout Withdrawal Modal */}
+      <Modal visible={withdrawModalVisible} animationType="slide" transparent>
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-white rounded-t-3xl p-5">
+            <View className="flex-row items-center justify-between border-b border-gray-100 pb-3 mb-4">
+              <View className="flex-row items-center gap-2">
+                <Banknote size={22} color="#3525CD" />
+                <Text className="text-[#111C2D] text-[18px] font-bold">Rút tiền về Tài khoản</Text>
+              </View>
+              <TouchableOpacity onPress={() => setWithdrawModalVisible(false)} className="p-1 bg-gray-100 rounded-full">
+                <X size={20} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <Text className="text-gray-600 text-xs mb-3">Chọn ngân hàng / Ví điện tử liên kết:</Text>
+
+            {['Vietcombank - **** 8892', 'MB Bank - **** 6612', 'Ví MoMo - 0988***123'].map((bank) => (
+              <TouchableOpacity
+                key={bank}
+                onPress={() => setSelectedBank(bank)}
+                className={`p-3 rounded-xl border mb-2 flex-row items-center justify-between ${selectedBank === bank ? 'border-[#3525CD] bg-[#F0F3FF]' : 'border-gray-200'}`}
+              >
+                <Text className={`font-semibold text-sm ${selectedBank === bank ? 'text-[#3525CD]' : 'text-gray-700'}`}>{bank}</Text>
+                {selectedBank === bank ? <CheckCircle2 size={18} color="#3525CD" /> : null}
+              </TouchableOpacity>
+            ))}
+
+            <Text className="text-gray-600 text-xs mt-3 mb-1">Nhập số tiền muốn rút (VNĐ):</Text>
+            <View className="bg-gray-100 border border-gray-300 rounded-xl px-4 py-3 mb-4 flex-row items-center">
+              <TextInput
+                value={withdrawAmount}
+                onChangeText={setWithdrawAmount}
+                keyboardType="numeric"
+                className="flex-1 text-base font-bold text-gray-800"
+                placeholder="500000"
+              />
+              <Text className="text-gray-500 font-bold">VNĐ</Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={handleWithdraw}
+              className="bg-[#3525CD] py-3.5 rounded-xl items-center flex-row justify-center gap-2"
+            >
+              <ArrowDownRight size={18} color="#FFFFFF" />
+              <Text className="text-white font-bold text-base">Xác nhận rút tiền</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

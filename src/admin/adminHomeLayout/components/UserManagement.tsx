@@ -25,6 +25,10 @@ export function UserManagement({ users, onAddUser, onUpdateStatus, onDeleteUser 
   const [roleFilter, setRoleFilter] = useState<'All' | 'staff' | 'client'>('All');
   const [statusFilter, setStatusFilter] = useState<'All' | 'active' | 'busy' | 'suspended'>('All');
   
+  // KYC Review State
+  const [kycReviewModalVisible, setKycReviewModalVisible] = useState(false);
+  const [selectedKycUser, setSelectedKycUser] = useState<any>(null);
+
   // Add User Modal State
   const [modalVisible, setModalVisible] = useState(false);
   const [newName, setNewName] = useState('');
@@ -261,8 +265,8 @@ export function UserManagement({ users, onAddUser, onUpdateStatus, onDeleteUser 
                     <Text className="text-slate-800 font-bold text-[14px]">{user.name}</Text>
                     <Text className="text-slate-400 text-xs mt-0.5" numberOfLines={1}>{user.email}</Text>
                     
-                    {/* Role badge */}
-                    <View className="flex-row mt-1">
+                    {/* Role & KYC badges */}
+                    <View className="flex-row items-center gap-1.5 mt-1 flex-wrap">
                       <View className={`px-2 py-0.5 rounded-full border ${
                         user.role === 'client' 
                           ? 'bg-amber-50 border-amber-100' 
@@ -272,6 +276,32 @@ export function UserManagement({ users, onAddUser, onUpdateStatus, onDeleteUser 
                           user.role === 'client' ? 'text-amber-600' : 'text-purple-600'
                         }`}>{user.roleLabel}</Text>
                       </View>
+
+                      {(user as any).kycStatus && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            setSelectedKycUser(user);
+                            setKycReviewModalVisible(true);
+                          }}
+                          className={`px-2 py-0.5 rounded-full border ${
+                            (user as any).kycStatus === 'verified'
+                              ? 'bg-emerald-50 border-emerald-200'
+                              : (user as any).kycStatus === 'pending'
+                              ? 'bg-amber-50 border-amber-200'
+                              : 'bg-slate-100 border-slate-200'
+                          }`}
+                        >
+                          <Text className={`text-[9px] font-extrabold ${
+                            (user as any).kycStatus === 'verified'
+                              ? 'text-emerald-700'
+                              : (user as any).kycStatus === 'pending'
+                              ? 'text-amber-700'
+                              : 'text-slate-600'
+                          }`}>
+                            {(user as any).kycStatus === 'verified' ? '✓ KYC Đã Duyệt' : (user as any).kycStatus === 'pending' ? '⏳ KYC Chờ Duyệt' : '⚠️ Chưa KYC'}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </View>
                 </View>
@@ -442,6 +472,71 @@ export function UserManagement({ users, onAddUser, onUpdateStatus, onDeleteUser 
             >
               <Text className="text-white font-extrabold text-sm">Lưu thông tin</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* KYC Review & Approval Modal */}
+      <Modal visible={kycReviewModalVisible} animationType="slide" transparent>
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-white rounded-t-3xl p-5 max-h-[85%]">
+            <View className="flex-row justify-between items-center pb-3 border-b border-slate-100 mb-4">
+              <Text className="text-lg font-bold text-slate-800">Duyệt KYC Sinh viên / CCCD</Text>
+              <TouchableOpacity onPress={() => setKycReviewModalVisible(false)} className="p-1">
+                <X size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-6">
+              <Text className="text-slate-800 font-bold text-base mb-1">{selectedKycUser?.name}</Text>
+              <Text className="text-slate-400 text-xs mb-3">{selectedKycUser?.email} • {selectedKycUser?.university || 'Đại học Bách Khoa TP.HCM'}</Text>
+
+              <Text className="font-bold text-slate-700 text-xs mb-2">1. Hình ảnh CCCD / CMND</Text>
+              <View className="w-full h-40 bg-slate-100 rounded-xl overflow-hidden mb-4 border border-slate-200">
+                <Image
+                  source={{ uri: selectedKycUser?.kycCardImage || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop' }}
+                  className="w-full h-full"
+                  resizeMode="cover"
+                />
+              </View>
+
+              <Text className="font-bold text-slate-700 text-xs mb-2">2. Thẻ Sinh viên</Text>
+              <View className="w-full h-40 bg-slate-100 rounded-xl overflow-hidden mb-5 border border-slate-200">
+                <Image
+                  source={{ uri: selectedKycUser?.studentCardImage || 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&auto=format&fit=crop' }}
+                  className="w-full h-full"
+                  resizeMode="cover"
+                />
+              </View>
+
+              <View className="flex-row gap-3">
+                <TouchableOpacity
+                  onPress={() => {
+                    if (selectedKycUser) {
+                      setSelectedKycUser((prev: any) => prev ? { ...prev, kycStatus: 'verified' } : null);
+                    }
+                    Alert.alert('Thành công', `Đã PHÊ DUYỆT KYC cho ${selectedKycUser?.name}!`);
+                    setKycReviewModalVisible(false);
+                  }}
+                  className="flex-1 bg-emerald-600 py-3.5 rounded-xl items-center"
+                >
+                  <Text className="text-white font-bold text-sm">✓ Phê duyệt KYC</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    if (selectedKycUser) {
+                      setSelectedKycUser((prev: any) => prev ? { ...prev, kycStatus: 'unverified' } : null);
+                    }
+                    Alert.alert('Đã Từ chối', `Đã từ chối hồ sơ KYC của ${selectedKycUser?.name}.`);
+                    setKycReviewModalVisible(false);
+                  }}
+                  className="bg-rose-100 border border-rose-200 px-4 py-3.5 rounded-xl items-center"
+                >
+                  <Text className="text-rose-700 font-bold text-sm">Từ chối</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>

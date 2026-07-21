@@ -18,7 +18,14 @@
     "todayIncome": "1.250.000đ",
     "balance": "15.450.000đ",
     "skills": ["Điện nước", "Lắp đặt IKEA", "Sơn sửa nhà", "Vận chuyển nội thất", "Khoan tường"],
-    "verifications": ["Số điện thoại: 09*** **123", "CCCD đã xác thực", "Giấy phép hành nghề"]
+    "verifications": ["Số điện thoại: 09*** **123", "CCCD đã xác thực", "Giấy phép hành nghề"],
+    "kycStatus": "verified",
+    "studentId": "SV-2023884",
+    "university": "Đại học Bách Khoa TP.HCM",
+    "cccdNumber": "07920100****",
+    "kycCardImage": "https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop",
+    "studentCardImage": "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&auto=format&fit=crop",
+    "escrowBalance": "1.250.000đ"
   },
   "nearbyTasks": [
     {
@@ -91,7 +98,10 @@
       "price": "450.000đ",
       "progress": 75,
       "customer": "Chị Mai Anh",
-      "note": "Khách hàng VIP"
+      "note": "Khách hàng VIP",
+      "proofOfWork": ["https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&auto=format&fit=crop", "https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?w=600&auto=format&fit=crop"],
+      "gpsCheckedIn": true,
+      "escrowStatus": "Ví Escrow giữ 450.000đ"
     },
     {
       "id": "accepted_02",

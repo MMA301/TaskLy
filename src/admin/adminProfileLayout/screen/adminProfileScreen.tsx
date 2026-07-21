@@ -1,13 +1,16 @@
 import React from 'react';
-import { Text, View } from 'react-native';
-import { Shield, Key, Clock, Award } from 'lucide-react-native';
+import { Text, View, TouchableOpacity, Alert } from 'react-native';
+import { Shield, Key, Clock, Award, LogOut } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import type { AuthSession } from '../../../session';
+import { clearAuthSession } from '../../../session';
 
 type AdminProfileScreenProps = {
   session: AuthSession;
 };
 
 export function AdminProfileScreen({ session }: AdminProfileScreenProps) {
+  const router = useRouter();
   const account = session.account;
   const displayName = account.name || account.username || 'Admin';
   
@@ -16,6 +19,20 @@ export function AdminProfileScreen({ session }: AdminProfileScreenProps) {
   
   // Format permission list
   const permissions = account.permissions || ['all'];
+
+  const handleLogout = () => {
+    Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất khỏi hệ thống Quản trị không?', [
+      { text: 'Hủy', style: 'cancel' },
+      {
+        text: 'Đăng xuất',
+        style: 'destructive',
+        onPress: () => {
+          clearAuthSession();
+          router.replace('/login');
+        },
+      },
+    ]);
+  };
 
   return (
     <View className="gap-5 mb-6">
@@ -76,6 +93,16 @@ export function AdminProfileScreen({ session }: AdminProfileScreenProps) {
           </View>
         </View>
       </View>
+
+      {/* Logout Button */}
+      <TouchableOpacity
+        onPress={handleLogout}
+        activeOpacity={0.85}
+        className="flex-row items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50/80 py-4"
+      >
+        <LogOut size={18} color="#DC2626" />
+        <Text className="text-rose-600 font-extrabold text-sm">Đăng xuất tài khoản</Text>
+      </TouchableOpacity>
     </View>
   );
 }

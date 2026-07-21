@@ -146,6 +146,17 @@ export default function ClientCheckoutScreen() {
             <Text style={styles.totalLabel}>Tổng cộng</Text>
             <Text style={styles.totalPrice}>500.000đ</Text>
           </View>
+
+          {/* Taskly Escrow Guarantee Banner */}
+          <View style={{ backgroundColor: '#F0FDF4', borderColor: '#BBF7D0', borderWidth: 1, borderRadius: 10, padding: 12, marginTop: 14, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Ionicons name="shield-checkmark" size={24} color="#16A34A" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#15803D' }}>🛡️ Bảo vệ đặt cọc qua Ví Escrow</Text>
+              <Text style={{ fontSize: 11, color: '#166534', marginTop: 2 }}>
+                Số tiền 500.000đ được hệ thống tạm giữ an toàn. Chỉ giải ngân cho Tasker sau khi bạn xem ảnh nghiệm thu và hài lòng 100%.
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Promo Code Section */}

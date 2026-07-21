@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { BarChart2, Briefcase, Building2, Search, User } from 'lucide-react-native';
+import { BarChart2, Home, PlusCircle, Search, User } from 'lucide-react-native';
 import { getAuthSession } from '../../src/session';
 
 export default function TabsLayout() {
@@ -28,10 +28,10 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: isClient ? 'Dự án' : isStaff ? 'Tìm việc' : 'Quản trị',
+          title: isClient ? 'Trang chủ' : isStaff ? 'Tìm việc' : 'Quản trị',
           tabBarIcon: ({ color, size }) => (
             isClient ? (
-              <Briefcase size={size} color={color} />
+              <Home size={size} color={color} />
             ) : isStaff ? (
               <Search size={size} color={color} />
             ) : (
@@ -41,18 +41,39 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="search"
+        options={{
+          title: 'Tìm kiếm',
+          href: isClient ? undefined : null,
+          tabBarIcon: ({ color, size }) => (
+            <Search size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="create"
+        options={{
+          title: 'Đăng Task',
+          href: isClient ? undefined : null,
+          tabBarIcon: ({ color, size }) => (
+            <PlusCircle size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: isStaff ? 'Cá nhân' : 'Tài khoản',
           tabBarIcon: ({ color, size }) => (
-            isClient ? (
-              <Building2 size={size} color={color} />
-            ) : (
-              <User size={size} color={color} />
-            )
+            <User size={size} color={color} />
           ),
         }}
       />
+      {/* Hide sub-flow routes from tab bar */}
+      <Tabs.Screen name="checkout" options={{ href: null }} />
+      <Tabs.Screen name="tracking" options={{ href: null }} />
+      <Tabs.Screen name="job-details" options={{ href: null }} />
+      <Tabs.Screen name="ai-smart-price" options={{ href: null }} />
     </Tabs>
   );
 }

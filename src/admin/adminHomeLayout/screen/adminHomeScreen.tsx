@@ -427,6 +427,24 @@ export function AdminHomeScreen({ session }: AdminHomeScreenProps) {
                     Quản lý người dùng
                   </Text>
                 </TouchableOpacity>
+
+                <View className="h-[1px] bg-slate-100 my-1" />
+
+                {/* Logout Option */}
+                <TouchableOpacity
+                  onPress={() => {
+                    setMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="flex-row items-center gap-3 p-2.5 rounded-xl bg-rose-50/60 active:bg-rose-100"
+                >
+                  <View className="w-8 h-8 rounded-lg items-center justify-center bg-rose-100">
+                    <LogOut size={14} color="#DC2626" />
+                  </View>
+                  <Text className="text-[13px] font-bold text-rose-600">
+                    Đăng xuất
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
           </TouchableWithoutFeedback>
