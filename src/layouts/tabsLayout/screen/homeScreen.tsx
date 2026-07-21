@@ -1,7 +1,8 @@
 import ClientHomeScreen from "@/src/client/screen/clientHomeScreen";
 import { useRouter } from "expo-router";
 import { Text, TouchableOpacity, View } from "react-native";
-import { AdminHomeScreen } from "../../../admin";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { AdminProfileScreen } from "../../../admin";
 import { getAuthSession } from "../../../session";
 import { TaskerHomeScreen } from "../../../tasker";
 
@@ -65,5 +66,12 @@ export function HomeScreen() {
     return <TaskerHomeScreen />;
   }
 
-  return <AdminHomeScreen session={session} />;
+  return (
+    <SafeAreaView
+      className="flex-1 bg-[#111827]"
+      edges={["top", "left", "right"]}
+    >
+      <AdminProfileScreen session={session} />
+    </SafeAreaView>
+  );
 }
