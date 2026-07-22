@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { BarChart2, Home, PlusCircle, Search, User } from 'lucide-react-native';
+import { BarChart2, Home, PlusCircle, Search, User, Clock } from 'lucide-react-native';
 import { getAuthSession } from '../../src/session';
 
 export default function TabsLayout() {
@@ -44,7 +44,7 @@ export default function TabsLayout() {
         name="search"
         options={{
           title: 'Tìm kiếm',
-          href: isClient ? undefined : null,
+          href: null,
           tabBarIcon: ({ color, size }) => (
             <Search size={size} color={color} />
           ),
@@ -61,6 +61,16 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="tracking"
+        options={{
+          title: 'Hoạt động',
+          href: isClient ? undefined : null,
+          tabBarIcon: ({ color, size }) => (
+            <Clock size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: isStaff ? 'Cá nhân' : 'Tài khoản',
@@ -71,7 +81,6 @@ export default function TabsLayout() {
       />
       {/* Hide sub-flow routes from tab bar */}
       <Tabs.Screen name="checkout" options={{ href: null }} />
-      <Tabs.Screen name="tracking" options={{ href: null }} />
       <Tabs.Screen name="job-details" options={{ href: null }} />
       <Tabs.Screen name="ai-smart-price" options={{ href: null }} />
     </Tabs>

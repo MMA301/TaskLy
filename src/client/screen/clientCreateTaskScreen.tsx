@@ -5,7 +5,6 @@ import { useState } from "react";
 import {
   Alert,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Constants & Components
 import Button from "../components/Button";
@@ -54,14 +54,14 @@ export default function ClientCreateTaskScreen() {
     }
 
     router.push({
-      pathname: "/(tabs)/ai-smart-price",
+      pathname: "/(tabs)/checkout",
       params: {
         taskName,
         taskDesc,
         address,
-        date,
-        time,
-        budget: budget + "đ",
+        date: date || "Hôm nay",
+        time: time || "14:00",
+        budget: budget,
       },
     });
   };
@@ -239,7 +239,7 @@ export default function ClientCreateTaskScreen() {
 
         {/* Form Submit Button */}
         <View style={styles.buttonContainer}>
-          <Button title="Đăng tin ngay" onPress={handleSubmit} />
+          <Button title="Đăng bài" onPress={handleSubmit} />
         </View>
       </ScrollView>
     </SafeAreaView>

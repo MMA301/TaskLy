@@ -4,7 +4,6 @@ import { useRouter } from "expo-router";
 import type { ComponentProps } from "react";
 import { useState } from "react";
 import {
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -13,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Constants & Components
 import Header from "../components/Header";
@@ -54,13 +54,13 @@ export default function ClientHomeScreen() {
     name: string;
     icon: ComponentProps<typeof Ionicons>["name"];
   }[] = [
-    { id: "clean", name: "Dọn dẹp", icon: "brush-outline" },
-    { id: "move", name: "Chuyển nhà", icon: "bus-outline" },
-    { id: "assemble", name: "Lắp ráp nội thất", icon: "construct-outline" },
-    { id: "deliver", name: "Giao hàng", icon: "cube-outline" },
-    { id: "shop", name: "Đi chợ hộ", icon: "cart-outline" },
-    { id: "hourly", name: "Hỗ trợ theo giờ", icon: "time-outline" },
-  ];
+      { id: "clean", name: "Dọn dẹp", icon: "brush-outline" },
+      { id: "move", name: "Chuyển nhà", icon: "bus-outline" },
+      { id: "assemble", name: "Lắp ráp nội thất", icon: "construct-outline" },
+      { id: "deliver", name: "Giao hàng", icon: "cube-outline" },
+      { id: "shop", name: "Đi chợ hộ", icon: "cart-outline" },
+      { id: "hourly", name: "Hỗ trợ theo giờ", icon: "time-outline" },
+    ];
 
   const handleSearch = () => {
     router.push({ pathname: "/(tabs)/search", params: { query: searchQuery } });

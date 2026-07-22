@@ -1,12 +1,11 @@
 // screens/CheckoutScreen.js
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import type { ComponentProps } from "react";
 import { useState } from "react";
 import {
   Alert,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -15,13 +14,33 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-// Constants
+// Constants & Store
 import Colors from "../constants/Colors";
 import Layout from "../constants/Layout";
+import { addTask } from "../../session";
 
 export default function ClientCheckoutScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    taskName?: string;
+    taskDesc?: string;
+    address?: string;
+    date?: string;
+    time?: string;
+    budget?: string;
+  }>();
+
+  const taskName = params.taskName || "Dọn dẹp căn hộ 2 phòng ngủ";
+  const taskDesc = params.taskDesc || "Mình cần một bạn dọn dẹp căn hộ 2 phòng ngủ, 1 phòng khách, 2 WC tại chung cư Sunrise City. Yêu cầu làm kỹ, sạch sẽ.";
+  const address = params.address || "Tòa Landmark 81, Vinhomes Central Park, Quận Bình Thạnh, TP.HCM";
+  const dateVal = params.date || "Hôm nay";
+  const timeVal = params.time || "14:00";
+  const budgetStr = params.budget || "500000";
+  const rawBudget = parseInt(budgetStr.replace(/[^0-9]/g, '')) || 500000;
+  const formattedBudget = rawBudget.toLocaleString('vi-VN') + "đ";
+
   const [promoCode, setPromoCode] = useState("");
   const [selectedPayment, setSelectedPayment] = useState("momo");
 
@@ -63,16 +82,47 @@ export default function ClientCheckoutScreen() {
   ];
 
   const handlePay = () => {
-    const successMsg =
-      "Thanh toán thành công! Task của bạn đã được đăng lên hệ thống.";
+    const newTaskId = "task_" + Math.floor(Math.random() * 1000000);
+    addTask({
+      id: newTaskId,
+      category: "Dọn dẹp",
+      title: taskName,
+      description: taskDesc,
+      price: formattedBudget,
+      rawBudget: rawBudget,
+      distance: "0.5 km",
+      postedAgo: "Vừa xong",
+      address: address,
+      time: dateVal + ", " + timeVal,
+      duration: "3 giờ",
+      customer: "Nguyễn Thị Thu Hà",
+      customerRating: "4.9",
+      status: "OPEN",
+      escrowStatus: "ESCROWED",
+      icon: "cleaning"
+    });
+
+    const successMsg = "Thanh toán thành công! Task của bạn đã được đăng lên hệ thống và chuyển trạng thái sang OPEN.";
 
     if (Platform.OS === "web") {
       alert(successMsg);
     } else {
-      Alert.alert("Thành công", successMsg);
+      Alert.alert("Ký quỹ thành công", successMsg);
     }
 
     router.replace("/(tabs)");
+  };
+
+  const handleCancel = () => {
+    const errorMsg = "Giao dịch ký quỹ thất bại. Bài đăng không được khởi tạo.";
+
+    if (Platform.OS === "web") {
+      alert(errorMsg);
+    } else {
+      Alert.alert("Hủy / Thất bại", errorMsg);
+    }
+
+    router.back();
   };
 
   return (
@@ -109,7 +159,7 @@ export default function ClientCheckoutScreen() {
             </View>
             <View style={styles.orderInfo}>
               <Text style={styles.orderName} numberOfLines={1}>
-                Dọn dẹp nhà cửa (3 giờ)
+                {taskName}
               </Text>
               <Text style={styles.orderTime}>
                 <Ionicons
@@ -117,7 +167,7 @@ export default function ClientCheckoutScreen() {
                   size={13}
                   color={Colors.onSurfaceVariant}
                 />{" "}
-                Hôm nay, 14:00 - 17:00
+                {dateVal}, {timeVal}
               </Text>
             </View>
           </View>
@@ -126,13 +176,13 @@ export default function ClientCheckoutScreen() {
 
           {/* Pricing breakdowns */}
           <View style={styles.pricingRow}>
-            <Text style={styles.pricingLabel}>Phí dịch vụ</Text>
-            <Text style={styles.pricingValue}>450.000đ</Text>
+            <Text style={styles.pricingLabel}>Phí dịch vụ (90%)</Text>
+            <Text style={styles.pricingValue}>{(Math.round(rawBudget * 0.9)).toLocaleString('vi-VN')}đ</Text>
           </View>
 
           <View style={styles.pricingRow}>
-            <Text style={styles.pricingLabel}>Phí di chuyển</Text>
-            <Text style={styles.pricingValue}>50.000đ</Text>
+            <Text style={styles.pricingLabel}>Phí di chuyển (10%)</Text>
+            <Text style={styles.pricingValue}>{(Math.round(rawBudget * 0.1)).toLocaleString('vi-VN')}đ</Text>
           </View>
 
           <View style={styles.dividerCenter}>
@@ -144,7 +194,7 @@ export default function ClientCheckoutScreen() {
 
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Tổng cộng</Text>
-            <Text style={styles.totalPrice}>500.000đ</Text>
+            <Text style={styles.totalPrice}>{formattedBudget}</Text>
           </View>
 
           {/* Taskly Escrow Guarantee Banner */}
@@ -153,7 +203,7 @@ export default function ClientCheckoutScreen() {
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 13, fontWeight: '700', color: '#15803D' }}>🛡️ Bảo vệ đặt cọc qua Ví Escrow</Text>
               <Text style={{ fontSize: 11, color: '#166534', marginTop: 2 }}>
-                Số tiền 500.000đ được hệ thống tạm giữ an toàn. Chỉ giải ngân cho Tasker sau khi bạn xem ảnh nghiệm thu và hài lòng 100%.
+                Số tiền {formattedBudget} được hệ thống tạm giữ an toàn. Chỉ giải ngân cho Tasker sau khi bạn xem ảnh nghiệm thu và hài lòng 100%.
               </Text>
             </View>
           </View>
@@ -252,17 +302,39 @@ export default function ClientCheckoutScreen() {
       <View style={styles.footerSticky}>
         <View style={styles.totalReceiptRow}>
           <Text style={styles.totalReceiptLabel}>Tổng thanh toán</Text>
-          <Text style={styles.totalReceiptValue}>500.000đ</Text>
+          <Text style={styles.totalReceiptValue}>{formattedBudget}</Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.payButton}
-          activeOpacity={0.8}
-          onPress={handlePay}
-        >
-          <Ionicons name="lock-closed" size={18} color={Colors.white} />
-          <Text style={styles.payButtonText}>Thanh toán an toàn</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <TouchableOpacity
+            style={[styles.payButton, { flex: 1 }]}
+            activeOpacity={0.8}
+            onPress={handlePay}
+          >
+            <Ionicons name="lock-closed" size={18} color={Colors.white} />
+            <Text style={styles.payButtonText}>Ký quỹ (SUCCESS)</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              height: 52,
+              borderRadius: Layout.borderRadius.md,
+              backgroundColor: '#FEE2E2',
+              borderColor: '#EF4444',
+              borderWidth: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+            activeOpacity={0.8}
+            onPress={handleCancel}
+          >
+            <Ionicons name="close-circle" size={18} color="#DC2626" />
+            <Text style={{ color: '#DC2626', fontSize: 14, fontWeight: '600' }}>Hủy / Thất bại</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.footerSecureNote}>
           <Ionicons name="shield-checkmark" size={14} color={Colors.outline} />

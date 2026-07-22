@@ -1,40 +1,111 @@
 // screens/JobDetailsScreen.js
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState, useEffect } from "react";
 import {
   Image,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  Alert
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-// Constants
+// Constants & Store
 import Colors from "../constants/Colors";
 import Layout from "../constants/Layout";
+import { getTasks, subscribe, acceptTasker, getAuthSession, Task } from "../../session";
 
 export default function ClientJobDetailsScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ task?: string }>();
-  const task = params.task
-    ? JSON.parse(params.task as string)
-    : {
-        category: "Cleaning",
-        title: "Dọn dẹp căn hộ 2 phòng ngủ",
-        description:
-          "Mình cần một bạn dọn dẹp căn hộ 2 phòng ngủ, 1 phòng khách, 2 WC tại chung cư Sunrise City. Yêu cầu làm kỹ, sạch sẽ.",
-        distance: "1.2 km",
-        rating: "4.9",
-        budget: "200.000đ",
-        avatarUrl:
-          "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop",
+  const params = useLocalSearchParams<{ task?: string; taskId?: string }>();
+  const initialTask = params.task ? JSON.parse(params.task as string) : null;
+  const initialTaskId = params.taskId || (initialTask ? initialTask.id : null);
+
+  const [currentTask, setCurrentTask] = useState<Task | null>(() => {
+    const allTasks = getTasks();
+    let matched = allTasks.find(t => t.id === initialTaskId);
+    if (!matched && initialTask) {
+      matched = allTasks.find(t => t.title === initialTask.title);
+    }
+    if (matched) return matched;
+    if (initialTask) {
+      return {
+        id: initialTask.id || 'temp',
+        category: initialTask.category || 'Cleaning',
+        title: initialTask.title || 'Dọn dẹp căn hộ 2 phòng ngủ',
+        description: initialTask.description || 'Mô tả công việc...',
+        price: initialTask.budget || '500.000đ',
+        rawBudget: 500000,
+        distance: initialTask.distance || '1.2 km',
+        postedAgo: 'Vừa xong',
+        address: 'Sunrise City, Quận 7',
+        time: 'Hôm nay',
+        duration: '3 giờ',
+        customer: 'Thu Hà',
+        customerRating: '4.9',
+        status: 'OPEN',
+        escrowStatus: 'ESCROWED',
+        applicants: [],
+        assignedTasker: null
       };
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    const findAndSetTask = () => {
+      const allTasks = getTasks();
+      let matched = allTasks.find(t => t.id === initialTaskId);
+      if (!matched && initialTask) {
+        matched = allTasks.find(t => t.title === initialTask.title);
+      }
+      if (matched) {
+        setCurrentTask(matched);
+      }
+    };
+
+    const unsubscribe = subscribe(findAndSetTask);
+    return unsubscribe;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTaskId, params.task]);
+
+  const activeTask = currentTask || {
+    id: "task_01",
+    category: "Cleaning",
+    title: "Dọn dẹp căn hộ 2 phòng ngủ",
+    description: "Mình cần một bạn dọn dẹp căn hộ 2 phòng ngủ, 1 phòng khách, 2 WC tại chung cư Sunrise City. Yêu cầu làm kỹ, sạch sẽ.",
+    distance: "1.2 km",
+    rating: "4.9",
+    budget: "200.000đ",
+    price: "200.000đ",
+    rawBudget: 200000,
+    postedAgo: "2 giờ trước",
+    address: "Sunrise City, Quận 7, TP. Hồ Chí Minh",
+    time: "Hôm nay, 14:00",
+    duration: "2 giờ",
+    customer: "Nguyễn Thị Thu Hà",
+    customerRating: "4.9",
+    applicants: ["Nguyễn Minh Đức"] as string[],
+    assignedTasker: null as string | null,
+    status: "OPEN" as any,
+    avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop",
+  };
 
   const handleApply = () => {
-    router.push("/(tabs)/checkout");
+    router.push({
+      pathname: "/(tabs)/checkout",
+      params: {
+        taskName: activeTask.title,
+        taskDesc: activeTask.description,
+        address: activeTask.address,
+        time: activeTask.time,
+        budget: activeTask.price
+      }
+    });
   };
 
   return (
@@ -79,10 +150,10 @@ export default function ClientJobDetailsScreen() {
 
         {/* Title Content Card */}
         <View style={styles.card}>
-          <Text style={styles.jobTitle}>{task.title}</Text>
+          <Text style={styles.jobTitle}>{activeTask.title}</Text>
           <View style={styles.jobSubRow}>
             <Ionicons name="time-outline" size={16} color={Colors.outline} />
-            <Text style={styles.jobTimeText}>Đăng 2 giờ trước</Text>
+            <Text style={styles.jobTimeText}>{activeTask.postedAgo}</Text>
             <Text style={styles.dot}>•</Text>
             <Text style={styles.jobUrgentText}>Cần gấp</Text>
           </View>
@@ -98,7 +169,7 @@ export default function ClientJobDetailsScreen() {
                 />
                 <Text style={styles.bentoCellLabel}>Ngân sách</Text>
               </View>
-              <Text style={styles.bentoCellPrice}>{task.budget}</Text>
+              <Text style={styles.bentoCellPrice}>{activeTask.price}</Text>
             </View>
 
             <View style={styles.bentoCell}>
@@ -110,7 +181,7 @@ export default function ClientJobDetailsScreen() {
                 />
                 <Text style={styles.bentoCellLabel}>Thời lượng</Text>
               </View>
-              <Text style={styles.bentoCellDuration}>2 giờ</Text>
+              <Text style={styles.bentoCellDuration}>{activeTask.duration}</Text>
             </View>
           </View>
         </View>
@@ -126,7 +197,7 @@ export default function ClientJobDetailsScreen() {
             <Text style={styles.sectionTitleText}>Mô tả công việc</Text>
           </View>
 
-          <Text style={styles.descText}>{task.description}</Text>
+          <Text style={styles.descText}>{activeTask.description}</Text>
 
           <Text style={styles.bulletsHeader}>Yêu cầu công việc:</Text>
           <View style={styles.bulletItem}>
@@ -166,38 +237,75 @@ export default function ClientJobDetailsScreen() {
           </View>
         </View>
 
-        {/* Counter Offers / Bidding Section */}
+        {/* Tasker Application List */}
         <View style={styles.card}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: Colors.onSurface }}>Đề Xuất Giá Từ Tasker (Bidding)</Text>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: Colors.onSurface }}>Danh sách ứng tuyển (Tasker Application List)</Text>
             <View style={{ backgroundColor: '#F0F3FF', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 }}>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.primary }}>2 Đề xuất mới</Text>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.primary }}>{activeTask.applicants.length} Ứng viên</Text>
             </View>
           </View>
 
-          <View style={{ backgroundColor: '#F9FAFB', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 10 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          {activeTask.status === 'OPEN' && activeTask.applicants.length === 0 && (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+              <Ionicons name="people-outline" size={32} color={Colors.outline} />
+              <Text style={{ fontSize: 13, color: Colors.onSurfaceVariant, marginTop: 8 }}>Chưa có Tasker nào ứng tuyển vào bài đăng này.</Text>
+            </View>
+          )}
+
+          {activeTask.status === 'OPEN' && activeTask.applicants.map((applicantName) => (
+            <View key={applicantName} style={{ backgroundColor: '#F9FAFB', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Image source={{ uri: 'https://api.dicebear.com/7.x/avataaars/png?seed=' + applicantName }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#111827' }}>{applicantName}</Text>
+                    <Text style={{ fontSize: 11, color: '#6B7280' }}>★ 4.9 • Sinh viên Bách Khoa (KYC Verified)</Text>
+                  </View>
+                </View>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: '#2563EB' }}>{activeTask.price}</Text>
+              </View>
+              <Text style={{ fontSize: 12, color: '#4B5563', marginTop: 8, fontStyle: 'italic' }}>
+                &quot;Tôi sẵn sàng nhận công việc dọn dẹp này và cam kết hoàn thành đúng giờ, sạch sẽ 100%.&quot;
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    acceptTasker(activeTask.id, applicantName);
+                    Alert.alert("Thành công", `Đã duyệt ứng viên ${applicantName} thực hiện công việc!`);
+                    router.push("/(tabs)/tracking");
+                  }}
+                  style={{ flex: 1, backgroundColor: '#16A34A', paddingVertical: 10, borderRadius: 8, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
+                >
+                  <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFFFFF' }}>Duyệt (Accept Tasker)</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={{ backgroundColor: '#F3F4F6', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280' }}>Từ chối</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+
+          {(activeTask.status === 'ACCEPTED' || activeTask.status === 'IN_PROGRESS' || activeTask.status === 'COMPLETED') && (
+            <View style={{ backgroundColor: '#F0FDF4', borderColor: '#BBF7D0', borderWidth: 1, borderRadius: 12, padding: 14 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Image source={{ uri: 'https://api.dicebear.com/7.x/avataaars/png?seed=TaskerMinhDuc' }} style={{ width: 36, height: 36, borderRadius: 18 }} />
-                <View>
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#111827' }}>Nguyễn Minh Đức</Text>
-                  <Text style={{ fontSize: 11, color: '#6B7280' }}>★ 4.9 • Sinh viên Bách Khoa</Text>
+                <Image source={{ uri: 'https://api.dicebear.com/7.x/avataaars/png?seed=' + activeTask.assignedTasker }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+                <View style={{ flex: 1, marginLeft: 8 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#15803D' }}>Đã giao cho: {activeTask.assignedTasker}</Text>
+                  <Text style={{ fontSize: 11, color: '#166534', marginTop: 1 }}>
+                    Trạng thái công việc: {activeTask.status === 'ACCEPTED' ? 'Chờ bắt đầu' : activeTask.status === 'IN_PROGRESS' ? 'Đang thực hiện' : 'Đã hoàn thành'}
+                  </Text>
                 </View>
               </View>
-              <Text style={{ fontSize: 16, fontWeight: '800', color: '#2563EB' }}>600.000đ</Text>
-            </View>
-            <Text style={{ fontSize: 12, color: '#4B5563', marginTop: 8, fontStyle: 'italic' }}>
-              &quot;Tôi mang đầy đủ máy hút bụi công nghiệp &amp; dụng cụ lau kính chuyên dụng.&quot;
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-              <TouchableOpacity onPress={() => router.push('/(tabs)/checkout')} style={{ flex: 1, backgroundColor: '#2563EB', paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFFFFF' }}>Chấp nhận đề xuất</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={{ backgroundColor: '#F3F4F6', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280' }}>Từ chối</Text>
+              <TouchableOpacity
+                onPress={() => router.push("/(tabs)/tracking")}
+                style={{ backgroundColor: Colors.primary, paddingVertical: 10, borderRadius: 8, alignItems: 'center', marginTop: 12 }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>Đi đến trang Theo dõi (Tracking)</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          )}
         </View>
 
         {/* Customer Profile Card */}
@@ -206,14 +314,14 @@ export default function ClientJobDetailsScreen() {
 
           <View style={styles.customerRow}>
             <Image
-              source={{ uri: task.avatarUrl }}
+              source={{ uri: activeTask.avatarUrl || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop" }}
               style={styles.customerAvatar}
             />
             <View style={styles.customerInfo}>
-              <Text style={styles.customerName}>Nguyễn Thị Thu Hà</Text>
+              <Text style={styles.customerName}>{activeTask.customer}</Text>
               <View style={styles.customerRatingRow}>
                 <Ionicons name="star" size={14} color={Colors.star} />
-                <Text style={styles.customerRating}>{task.rating}</Text>
+                <Text style={styles.customerRating}>{activeTask.customerRating}</Text>
                 <Text style={styles.customerReviews}>(24 đánh giá)</Text>
               </View>
             </View>
@@ -258,15 +366,17 @@ export default function ClientJobDetailsScreen() {
       </ScrollView>
 
       {/* Floating Sticky Bottom button */}
-      <View style={styles.stickyFooter}>
-        <TouchableOpacity
-          style={styles.applyButton}
-          activeOpacity={0.8}
-          onPress={handleApply}
-        >
-          <Text style={styles.applyButtonText}>Ứng tuyển ngay</Text>
-        </TouchableOpacity>
-      </View>
+      {getAuthSession()?.role !== 'client' && (
+        <View style={styles.stickyFooter}>
+          <TouchableOpacity
+            style={styles.applyButton}
+            activeOpacity={0.8}
+            onPress={handleApply}
+          >
+            <Text style={styles.applyButtonText}>Ứng tuyển ngay</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

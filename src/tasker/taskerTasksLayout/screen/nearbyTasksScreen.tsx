@@ -1,6 +1,7 @@
 import { Briefcase, ChevronDown, Clock, Crosshair, MapPin, Package, ShoppingBasket, SlidersHorizontal, Wrench } from 'lucide-react-native';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { mockTaskerData } from '../../../../mockdata';
+import { useState, useEffect } from 'react';
+import { getTasks, subscribe, setSelectedTaskId, Task } from '../../../session';
 import { IconTile, TaskerCard, TaskerHeader, TaskerPill } from '../../taskerHomeLayout/components/TaskerPrimitives';
 import { TASKER_COLORS, taskerShadow } from '../../taskerTheme';
 import type { TaskerIcon, TaskerScreenProps } from '../../types';
@@ -13,6 +14,17 @@ const iconMap = {
 };
 
 export function NearbyTasksScreen({ onBack, onNavigate }: TaskerScreenProps) {
+  const [tasksList, setTasksList] = useState<Task[]>(() =>
+    getTasks().filter((t: Task) => t.status === 'OPEN')
+  );
+
+  useEffect(() => {
+    const unsubscribe = subscribe(() => {
+      setTasksList(getTasks().filter((t: Task) => t.status === 'OPEN'));
+    });
+
+    return unsubscribe;
+  }, []);
   return (
     <View className="flex-1 bg-[#F9F9FF]">
       <TaskerHeader title="Công việc gần đây" subtitle="Quận 1, TP. Hồ Chí Minh" onBack={onBack} />
@@ -53,15 +65,18 @@ export function NearbyTasksScreen({ onBack, onNavigate }: TaskerScreenProps) {
         <View className="px-4">
           <View className="flex-row items-center justify-between mb-4">
             <Text className="text-[#111C2D] text-[22px] font-extrabold">
-              Công việc gần bạn <Text className="text-[#3525CD]">(24)</Text>
-            </Text>
-            <Text className="text-[#3525CD] font-bold text-[12px]">Xem bản đồ</Text>
-          </View>
-          <View className="gap-4">
-            {mockTaskerData.nearbyTasks.map((task) => {
-              const Icon = iconMap[task.icon as keyof typeof iconMap] ?? Briefcase;
-              return (
-                <TouchableOpacity key={task.id} onPress={() => onNavigate('detail')} activeOpacity={0.86}>
+            Công việc gần bạn <Text className="text-[#3525CD]">({tasksList.length})</Text>
+          </Text>
+          <Text className="text-[#3525CD] font-bold text-[12px]">Xem bản đồ</Text>
+        </View>
+        <View className="gap-4">
+          {tasksList.map((task) => {
+            const Icon = iconMap[task.icon as keyof typeof iconMap] ?? Briefcase;
+            return (
+              <TouchableOpacity key={task.id} onPress={() => {
+                setSelectedTaskId(task.id);
+                onNavigate('detail');
+              }} activeOpacity={0.86}>
                   <TaskerCard className="p-4">
                     <View className="flex-row gap-4">
                       <IconTile icon={Icon} size="lg" />
