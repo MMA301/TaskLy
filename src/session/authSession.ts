@@ -18,6 +18,8 @@ export type DemoAccount = {
 export type AuthSession = {
   role: AuthSessionRole;
   account: DemoAccount;
+  accessToken?: string;
+  refreshToken?: string;
 };
 
 let currentSession: AuthSession | null = null;

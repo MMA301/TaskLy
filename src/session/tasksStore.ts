@@ -129,6 +129,7 @@ export function acceptTasker(taskId: string, taskerName: string): boolean {
   if (task) {
     task.assignedTasker = taskerName;
     task.status = 'ACCEPTED';
+    task.applicants = [taskerName]; // auto-reject others
     notify();
     return true;
   }
@@ -160,6 +161,58 @@ export function addReview(taskId: string, rating: number, comment: string): bool
   const task = tasks.find(t => t.id === taskId);
   if (task) {
     task.review = { rating, comment };
+    notify();
+    return true;
+  }
+  return false;
+}
+
+export function updateTask(taskId: string, data: Partial<Task>): boolean {
+  const task = tasks.find(t => t.id === taskId);
+  if (task) {
+    Object.assign(task, data);
+    notify();
+    return true;
+  }
+  return false;
+}
+
+export function cancelTask(taskId: string): boolean {
+  const initialLen = tasks.length;
+  tasks = tasks.filter(t => t.id !== taskId);
+  if (tasks.length < initialLen) {
+    notify();
+    return true;
+  }
+  return false;
+}
+
+export function rejectApplicant(taskId: string, applicantName: string): boolean {
+  const task = tasks.find(t => t.id === taskId);
+  if (task) {
+    task.applicants = task.applicants.filter(a => a !== applicantName);
+    notify();
+    return true;
+  }
+  return false;
+}
+
+export function payTaskEscrow(taskId: string): boolean {
+  const task = tasks.find(t => t.id === taskId);
+  if (task) {
+    task.escrowStatus = 'ESCROWED';
+    notify();
+    return true;
+  }
+  return false;
+}
+
+export function refundTaskEscrow(taskId: string): boolean {
+  const task = tasks.find(t => t.id === taskId);
+  if (task) {
+    task.escrowStatus = 'UNPAID';
+    task.assignedTasker = null;
+    task.status = 'OPEN';
     notify();
     return true;
   }

@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { User, Lock, ArrowRight, ChevronDown, ChevronRight, Apple, Globe } from 'lucide-react-native';
 import { mockAdminsData, mockClientsData, mockUsersData } from '../../../../mockdata';
 import { setAuthSession } from '../../../session';
+import { authApi } from '../../../../service/api';
 
 export function LoginScreen() {
   const router = useRouter();
@@ -36,49 +37,83 @@ export function LoginScreen() {
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      const isAdmin = mockAdminsData.find(
-        (admin) =>
-          (admin.email?.toLowerCase() === txtEmail ||
-            admin.username?.toLowerCase() === txtEmail) &&
-          admin.password === txtPassword
-      );
+    authApi.login({ email: txtEmail, password: txtPassword })
+      .then((result: any) => {
+        const { user, tokens } = result;
 
-      if (isAdmin) {
-        setAuthSession({ role: 'admin', account: isAdmin });
+        // Map backend role to frontend role
+        let mappedRole: 'admin' | 'staff' | 'client';
+        if (user.role === 'admin') {
+          mappedRole = 'admin';
+        } else if (user.role === 'tasker') {
+          mappedRole = 'staff';
+        } else {
+          mappedRole = 'client';
+        }
+
+        const account = {
+          id: user._id || user.id,
+          name: user.fullName || user.username || user.email,
+          email: user.email,
+          role: user.role,
+          phone: user.phone,
+        };
+
+        setAuthSession({
+          role: mappedRole,
+          account,
+          accessToken: tokens.access,
+          refreshToken: tokens.refresh
+        });
+
         goToTabs();
-        return;
-      }
+      })
+      .catch((apiError: any) => {
+        // Fallback to local mock data if the user does not exist in backend database
+        // This keeps the quick-fill demo buttons working even if database doesn't have the records.
+        const isAdmin = mockAdminsData.find(
+          (admin) =>
+            (admin.email?.toLowerCase() === txtEmail ||
+              admin.username?.toLowerCase() === txtEmail) &&
+            admin.password === txtPassword
+        );
 
-      const isStaff = mockUsersData.find(
-        (user) => user.email?.toLowerCase() === txtEmail && user.password === txtPassword
-      );
+        if (isAdmin) {
+          setAuthSession({ role: 'admin', account: isAdmin });
+          goToTabs();
+          return;
+        }
 
-      if (isStaff) {
-        setAuthSession({ role: 'staff', account: isStaff });
-        goToTabs();
-        return;
-      }
+        const isStaff = mockUsersData.find(
+          (user) => user.email?.toLowerCase() === txtEmail && user.password === txtPassword
+        );
 
-      const isClient = mockClientsData.find(
-        (client) => client.email?.toLowerCase() === txtEmail && client.password === txtPassword
-      );
+        if (isStaff) {
+          setAuthSession({ role: 'staff', account: isStaff });
+          goToTabs();
+          return;
+        }
 
-      if (isClient) {
-        setAuthSession({ role: 'client', account: isClient });
-        goToTabs();
-        return;
-      }
+        const isClient = mockClientsData.find(
+          (client) => client.email?.toLowerCase() === txtEmail && client.password === txtPassword
+        );
 
-      setIsLoading(false);
-      Alert.alert('Thất bại', 'Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!');
-    }, 1500);
+        if (isClient) {
+          setAuthSession({ role: 'client', account: isClient });
+          goToTabs();
+          return;
+        }
+
+        setIsLoading(false);
+        const errMsg = apiError.message || 'Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại!';
+        Alert.alert('Thất bại', errMsg);
+      });
   };
 
-  const fillDemoAccount = (demoEmail: string) => {
+  const fillDemoAccount = (demoEmail: string, demoPassword: string) => {
     if (isLoading) return;
     setEmail(demoEmail);
-    setPassword('Taskly@123');
+    setPassword(demoPassword);
   };
 
   return (
@@ -238,31 +273,31 @@ export function LoginScreen() {
               <View className="mt-2.5 border-t border-t-[#E5E7EB] pt-2 gap-1.5">
                 <TouchableOpacity 
                   className="flex-row py-1.5 px-2 bg-white rounded-md border border-[#E5E7EB]"
-                  onPress={() => fillDemoAccount('quan.va.admin@taskly.com')}
-                  disabled={isLoading}
-                >
-                  <Text className="font-bold text-[12px] text-[#374151] w-[80px]">Admin:</Text>
-                  <Text className="text-[12px] text-[#4B5563]">quan.va.admin@taskly.com</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  className="flex-row py-1.5 px-2 bg-white rounded-md border border-[#E5E7EB]"
-                  onPress={() => fillDemoAccount('contact@techvina.vn')}
+                  onPress={() => fillDemoAccount('customer@taskly.com', 'customerpassword')}
                   disabled={isLoading}
                 >
                   <Text className="font-bold text-[12px] text-[#374151] w-[80px]">Khách hàng:</Text>
-                  <Text className="text-[12px] text-[#4B5563]">contact@techvina.vn</Text>
+                  <Text className="text-[12px] text-[#4B5563]">customer@taskly.com (customerpassword)</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity 
                   className="flex-row py-1.5 px-2 bg-white rounded-md border border-[#E5E7EB]"
-                  onPress={() => fillDemoAccount('mai.lt@taskly.com')}
+                  onPress={() => fillDemoAccount('tasker@taskly.com', 'taskerpassword')}
                   disabled={isLoading}
                 >
-                  <Text className="font-bold text-[12px] text-[#374151] w-[80px]">Nhân viên:</Text>
-                  <Text className="text-[12px] text-[#4B5563]">mai.lt@taskly.com</Text>
+                  <Text className="font-bold text-[12px] text-[#374151] w-[80px]">Người làm:</Text>
+                  <Text className="text-[12px] text-[#4B5563]">tasker@taskly.com (taskerpassword)</Text>
                 </TouchableOpacity>
-                <Text className="text-[11px] text-[#6B7280] italic mt-1 text-center">Mật khẩu chung: Taskly@123</Text>
+
+                <TouchableOpacity 
+                  className="flex-row py-1.5 px-2 bg-white rounded-md border border-[#E5E7EB]"
+                  onPress={() => fillDemoAccount('admin@taskly.com', 'adminpassword')}
+                  disabled={isLoading}
+                >
+                  <Text className="font-bold text-[12px] text-[#374151] w-[80px]">Admin:</Text>
+                  <Text className="text-[12px] text-[#4B5563]">admin@taskly.com (adminpassword)</Text>
+                </TouchableOpacity>
+                <Text className="text-[11px] text-[#6B7280] italic mt-1 text-center">Mật khẩu tương ứng hiển thị bên cạnh email</Text>
               </View>
             )}
           </View>

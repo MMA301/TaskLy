@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useNavigation } from "expo-router";
 import { useState, useEffect } from "react";
 import {
   Alert,
@@ -18,103 +18,41 @@ import { SafeAreaView } from "react-native-safe-area-context";
 // Constants & Store
 import Colors from "../constants/Colors";
 import Layout from "../constants/Layout";
-import { getTasks, subscribe, releaseEscrow, addReview, Task } from "../../session";
+import { getAuthSession } from "../../session";
+import { taskApi } from "../../../service/api";
+import { ActivityIndicator } from "react-native";
 
 export default function ClientTrackingScreen() {
   const router = useRouter();
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
-  const [isSheetExpanded, setIsSheetExpanded] = useState(true);
-  const [proofModalVisible, setProofModalVisible] = useState(false);
-  const [disputeModalVisible, setDisputeModalVisible] = useState(false);
-  const [disputeReason, setDisputeReason] = useState("Tasker đến muộn và bỏ dở công việc chưa hoàn thành xong phòng ngủ.");
-
-  // Review states
-  const [reviewModalVisible, setReviewModalVisible] = useState(false);
-  const [rating, setRating] = useState(5);
-  const [reviewComment, setReviewComment] = useState("");
-
-  // Tab & history states
+  const navigation = useNavigation();
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
-  const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
+
+  const loadTasks = () => {
+    taskApi.getTasks()
+      .then((res: any) => {
+        setTasks(res);
+      })
+      .catch((err) => {
+        console.error("Lỗi khi tải danh sách công việc:", err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
 
   useEffect(() => {
-    const fetchLatestTask = () => {
-      const allTasks = getTasks();
-      const latestActive = allTasks.find(t => t.status !== 'COMPLETED');
-      const completed = allTasks.filter(t => t.status === 'COMPLETED');
-
-      setActiveTask(latestActive || null);
-      setCompletedTasks(completed);
-    };
-
-    fetchLatestTask();
-    const unsubscribe = subscribe(fetchLatestTask);
+    loadTasks();
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadTasks();
+    });
     return unsubscribe;
-  }, []);
+  }, [navigation]);
 
-  const toggleSheet = () => {
-    setIsSheetExpanded(!isSheetExpanded);
-  };
-
-  const handleReleaseEscrow = () => {
-    if (!activeTask) return;
-    Alert.alert(
-      "Giải ngân Escrow",
-      `Bạn xác nhận đã nghiệm thu công việc thành công. Số tiền ${activeTask.price} từ Ví Escrow sẽ được chuyển ngay cho Tasker!`,
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xác nhận & Giải ngân",
-          onPress: () => {
-            releaseEscrow(activeTask.id);
-            Alert.alert(
-              "Thành công",
-              "Đã giải ngân tiền thành công cho Tasker! Vui lòng dành chút thời gian đánh giá người giúp việc.",
-              [
-                {
-                  text: "Đánh giá ngay",
-                  onPress: () => {
-                    setReviewModalVisible(true);
-                  }
-                }
-              ]
-            );
-          },
-        },
-      ]
-    );
-  };
-
-  const handleSendReview = () => {
-    if (!activeTask) return;
-    addReview(activeTask.id, rating, reviewComment);
-    Alert.alert("Cảm ơn", "Đã gửi đánh giá của bạn thành công!");
-    setReviewModalVisible(false);
-    
-    // Refresh states and switch to history
-    const allTasks = getTasks();
-    const latestActive = allTasks.find(t => t.status !== 'COMPLETED');
-    const completed = allTasks.filter(t => t.status === 'COMPLETED');
-    setActiveTask(latestActive || null);
-    setCompletedTasks(completed);
-    setActiveTab('history');
-  };
-
-  const handleSendDispute = () => {
-    Alert.alert(
-      "Đã gửi Khiếu nại",
-      "Yêu cầu tranh chấp của bạn đã được gửi tới Admin Taskly. Bộ phận CSKH sẽ xem xét bằng chứng và liên hệ trong 15 phút!",
-      [{ text: "Đóng", onPress: () => setDisputeModalVisible(false) }]
-    );
-  };
-
-  const handleClientSos = () => {
-    Alert.alert(
-      "🔴 CẢNH BÁO SOS KHẨN CẤP",
-      "Đã phát thông báo khẩn cấp tới Hotline Taskly 24/7 và đồn Công An gần nhất!",
-      [{ text: "Đóng" }]
-    );
-  };
+  // Filter tasks based on status
+  const activeTasks = tasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled');
+  const completedTasks = tasks.filter(t => t.status === 'completed' || t.status === 'cancelled');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -148,7 +86,7 @@ export default function ClientTrackingScreen() {
           >
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: activeTab === 'active' ? '#FFFFFF' : '#EA580C' }} />
             <Text style={{ fontSize: 13, fontWeight: '700', color: activeTab === 'active' ? '#FFFFFF' : '#4B5563' }}>
-              Đang hoạt động
+              Đang hoạt động ({activeTasks.length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -168,180 +106,89 @@ export default function ClientTrackingScreen() {
       </View>
 
       {activeTab === 'active' ? (
-        activeTask ? (
-          <View style={{ flex: 1, position: 'relative' }}>
-            {/* Absolute Map Background */}
-            <View style={styles.mapContainer}>
-              <Image
-                source={{
-                  uri: "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=800&auto=format&fit=crop",
-                }}
-                style={styles.mapBackground}
-              />
-
-              {/* Motorcycle Live Marker */}
-              {activeTask.status === 'IN_PROGRESS' && (
-                <View style={[styles.markerContainer, styles.taskerMarker]}>
-                  <View style={styles.pulseRing} />
-                  <View style={styles.markerCircle}>
-                    <Ionicons name="bicycle" size={16} color={Colors.white} />
-                  </View>
-                </View>
-              )}
-
-              {/* Destination Location Pin */}
-              <View style={[styles.markerContainer, styles.destinationMarker]}>
-                <View style={styles.destinationTooltip}>
-                  <Text style={styles.destinationTooltipText}>Điểm đến</Text>
-                </View>
-                <View style={[styles.markerCircle, styles.destinationCircle]}>
-                  <Ionicons name="location" size={18} color={Colors.white} />
-                </View>
-              </View>
-            </View>
-
-            {/* Floating Status Badge */}
-            <View style={styles.statusBadgeContainer}>
-              <View style={styles.statusBadge}>
-                <View style={[styles.greenPulseDot, { backgroundColor: activeTask.status === 'COMPLETED' ? '#10B981' : activeTask.status === 'IN_PROGRESS' ? '#3B82F6' : '#EF4444' }]} />
-                <Text style={styles.statusBadgeText}>
-                  {activeTask.status === 'IN_PROGRESS' ? "ĐANG THỰC HIỆN • VÍ ESCROW GIỮ TẠM" :
-                   activeTask.status === 'ACCEPTED' ? "ĐÃ DUYỆT TASKER • CHỜ BẮT ĐẦU" :
-                   "ĐANG TÌM TASKER (OPEN)"}
-                </Text>
-              </View>
-            </View>
-
-            {/* Floating Map Zoom/Utility Buttons & SOS */}
-            <View style={styles.mapUtilityColumn}>
-              <TouchableOpacity style={[styles.utilityBtn, { backgroundColor: '#FEE2E2', borderColor: '#EF4444', borderWidth: 1 }]} onPress={handleClientSos}>
-                <Ionicons name="warning" size={22} color="#DC2626" />
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }} style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+          {isLoading && tasks.length === 0 ? (
+            <ActivityIndicator size="large" color="#EA580C" style={{ marginTop: 40 }} />
+          ) : activeTasks.length === 0 ? (
+            <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 80 }}>
+              <Ionicons name="clipboard-outline" size={56} color="#9CA3AF" />
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#374151', marginTop: 16 }}>Không có công việc đang chạy</Text>
+              <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center', marginTop: 8, marginBottom: 24 }}>
+                Bạn chưa có yêu cầu dịch vụ nào đang trong quá trình thực hiện. Hãy đăng việc mới ngay!
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.push("/(tabs)/create")}
+                style={{ backgroundColor: '#EA580C', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}
+              >
+                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 15 }}>Đăng việc mới ngay</Text>
               </TouchableOpacity>
             </View>
+          ) : (
+            activeTasks.map((task: any) => {
+              const formattedPrice = typeof task.price === 'number' ? task.price.toLocaleString("vi-VN") + "đ" : task.price;
+              
+              // Status mapping
+              let statusLabel = "Đang tìm kiếm (OPEN)";
+              let statusColor = "#C2410C";
+              let statusBg = "#FFF7ED";
+              if (task.status === "assigned") {
+                statusLabel = "Chờ Tasker bắt đầu làm việc";
+                statusColor = "#4F46E5";
+                statusBg = "#EEF2FF";
+              } else if (task.status === "in_progress") {
+                statusLabel = "Đang thực hiện";
+                statusColor = "#2563EB";
+                statusBg = "#EFF6FF";
+              }
 
-            {/* Bottom Sheet Modal */}
-            <View style={[styles.bottomSheet, isSheetExpanded ? { height: 380 } : styles.bottomSheetCollapsed]}>
-              <TouchableOpacity style={styles.dragHandleContainer} onPress={toggleSheet} activeOpacity={0.9}>
-                <View style={styles.dragHandleBar} />
-              </TouchableOpacity>
-
-              <View style={styles.taskerRow}>
-                <View style={styles.taskerAvatarWrapper}>
-                  <Image
-                    source={{
-                      uri: activeTask.assignedTasker ? 'https://api.dicebear.com/7.x/avataaars/png?seed=' + activeTask.assignedTasker : "https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=120&auto=format&fit=crop",
-                    }}
-                    style={styles.taskerAvatar}
-                  />
-                  {activeTask.assignedTasker ? <View style={styles.taskerOnlineDot} /> : null}
-                </View>
-
-                <View style={styles.taskerTextInfo}>
-                  <Text style={styles.taskerName}>
-                    {activeTask.assignedTasker ? `${activeTask.assignedTasker} (Đối tác duyệt)` : "Đang chờ Tasker ứng tuyển..."}
-                  </Text>
-                  <View style={styles.taskerRatingRow}>
-                    <Ionicons name="star" size={14} color={Colors.star} />
-                    <Text style={styles.taskerRatingText}>4.9</Text>
-                    <Text style={styles.statsSeparator}>•</Text>
-                    <Text style={styles.taskerCompletedText}>
-                      {activeTask.assignedTasker ? "128 Task • KYC Verified" : "Đang chờ..."}
-                    </Text>
+              return (
+                <TouchableOpacity
+                  key={task._id || task.id}
+                  onPress={() => router.push({
+                    pathname: "/(tabs)/job-details",
+                    params: { taskId: task._id || task.id }
+                  })}
+                  style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E5E7EB', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 }}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <View style={{ backgroundColor: statusBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '800', color: statusColor }}>{statusLabel}</Text>
+                    </View>
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: '#EA580C' }}>{formattedPrice}</Text>
                   </View>
-                  <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
-                    {activeTask.assignedTasker && (
-                      <View style={styles.verifiedBadge}>
-                        <Text style={styles.verifiedBadgeText}>✓ Sinh viên KYC</Text>
-                      </View>
-                    )}
-                    <View style={{ backgroundColor: '#DCFCE7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }}>
-                      <Text style={{ fontSize: 10, fontWeight: '700', color: '#166534' }}>🛡️ Escrow {activeTask.price}</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: '#111C2D', marginBottom: 6 }}>{task.title}</Text>
+                  <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 12 }}>📍 {task.address}</Text>
+
+                  <View style={{ height: 1, backgroundColor: '#F3F4F6', marginBottom: 12 }} />
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Ionicons name="shield-checkmark" size={14} color="#6B7280" />
+                      <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                        {task.paymentStatus === 'paid' 
+                          ? "🛡️ Đã ký quỹ" 
+                          : task.paymentStatus === 'released'
+                          ? "✓ Đã giải ngân"
+                          : task.paymentStatus === 'refunded'
+                          ? "✗ Đã hoàn tiền"
+                          : "⏳ Chưa thanh toán"}
+                      </Text>
+                    </View>
+                    <View style={{ backgroundColor: '#F3F4F6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#4B5563' }}>Xem ứng viên & Chi tiết</Text>
                     </View>
                   </View>
-                </View>
-              </View>
-
-              {isSheetExpanded && (
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-                  <View style={styles.divider} />
-                  
-                  {activeTask.status === 'IN_PROGRESS' && (
-                    <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-                      <TouchableOpacity
-                        onPress={() => setProofModalVisible(true)}
-                        style={{ flex: 1, backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#3B82F6', paddingVertical: 10, borderRadius: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
-                      >
-                        <Ionicons name="images" size={18} color="#2563EB" />
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#2563EB' }}>Xem ảnh Nghiệm thu</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        onPress={() => setDisputeModalVisible(true)}
-                        style={{ backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FCA5A5', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
-                      >
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#DC2626' }}>Khiếu nại</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-
-                  {activeTask.status === 'IN_PROGRESS' ? (
-                    <TouchableOpacity
-                      onPress={handleReleaseEscrow}
-                      style={{ backgroundColor: '#16A34A', paddingVertical: 14, borderRadius: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 14 }}
-                    >
-                      <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Nghiệm Thu & Giải Ngân Escrow</Text>
-                    </TouchableOpacity>
-                  ) : activeTask.status === 'ACCEPTED' ? (
-                    <View style={{ backgroundColor: '#F0FDF4', borderColor: '#BBF7D0', borderWidth: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center', marginBottom: 14 }}>
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#166534' }}>✓ Đã giao việc. Đang chờ Tasker bắt đầu.</Text>
-                    </View>
-                  ) : (
-                    <View style={{ backgroundColor: '#FFF7ED', borderColor: '#FFEDD5', borderWidth: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center', marginBottom: 14 }}>
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#C2410C' }}>🔍 Đang tìm nhân viên giúp việc ứng tuyển...</Text>
-                    </View>
-                  )}
-
-                  <View style={styles.actionsRow}>
-                    <TouchableOpacity style={styles.actionIconButton}>
-                      <Ionicons name="chatbubble-ellipses" size={24} color={Colors.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionIconButton}>
-                      <Ionicons name="call" size={24} color={Colors.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.detailBtn}
-                      onPress={() => router.push({
-                        pathname: "/(tabs)/job-details",
-                        params: { taskId: activeTask.id }
-                      })}
-                    >
-                      <Text style={styles.detailBtnText}>Chi tiết Task</Text>
-                    </TouchableOpacity>
-                  </View>
-                </ScrollView>
-              )}
-            </View>
-          </View>
-        ) : (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#F9FAFB' }}>
-            <Ionicons name="clipboard-outline" size={64} color="#9CA3AF" />
-            <Text style={{ fontSize: 18, fontWeight: '700', color: '#374151', marginTop: 16 }}>Không có công việc đang chạy</Text>
-            <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center', marginTop: 8, marginBottom: 24 }}>
-              Bạn chưa có yêu cầu dịch vụ nào đang trong quá trình thực hiện. Hãy đăng việc mới ngay!
-            </Text>
-            <TouchableOpacity
-              onPress={() => router.push("/(tabs)/create")}
-              style={{ backgroundColor: '#EA580C', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}
-            >
-              <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 15 }}>Đăng việc mới ngay</Text>
-            </TouchableOpacity>
-          </View>
-        )
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </ScrollView>
       ) : (
         /* History List Tab */
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }} style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
-          {completedTasks.length === 0 ? (
+          {isLoading && tasks.length === 0 ? (
+            <ActivityIndicator size="large" color="#EA580C" style={{ marginTop: 40 }} />
+          ) : completedTasks.length === 0 ? (
             <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 80 }}>
               <Ionicons name="folder-open-outline" size={56} color="#9CA3AF" />
               <Text style={{ fontSize: 15, fontWeight: '700', color: '#4B5563', marginTop: 12 }}>Chưa có lịch sử đặt việc</Text>
@@ -350,168 +197,59 @@ export default function ClientTrackingScreen() {
               </Text>
             </View>
           ) : (
-            completedTasks.map((task) => (
-              <View key={task.id} style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E5E7EB', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <View style={{ backgroundColor: '#F0FDF4', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
-                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#15803D' }}>✓ Đã hoàn thành</Text>
-                  </View>
-                  <Text style={{ fontSize: 16, fontWeight: '800', color: '#EA580C' }}>{task.price}</Text>
-                </View>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: '#111C2D', marginBottom: 6 }}>{task.title}</Text>
-                <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 12 }}>📍 {task.address}</Text>
-
-                <View style={{ height: 1, backgroundColor: '#F3F4F6', marginBottom: 12 }} />
-
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Image
-                      source={{ uri: 'https://api.dicebear.com/7.x/avataaars/png?seed=' + (task.assignedTasker || 'Tasker') }}
-                      style={{ width: 28, height: 28, borderRadius: 14 }}
-                    />
-                    <View style={{ flex: 1, marginLeft: 8 }}>
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Tasker: {task.assignedTasker || "Đã làm xong"}</Text>
-                      {task.review ? (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 }}>
-                          <Ionicons name="star" size={12} color="#FBBF24" />
-                          <Text style={{ fontSize: 11, fontWeight: '700', color: '#7E3000' }}>{task.review.rating}/5 sao</Text>
-                          <Text style={{ fontSize: 11, color: '#6B7280' }}> - {task.review.comment}</Text>
-                        </View>
-                      ) : (
-                        <Text style={{ fontSize: 11, color: '#9CA3AF', fontStyle: 'italic', marginTop: 2 }}>Chưa gửi đánh giá</Text>
-                      )}
+            completedTasks.map((task: any) => {
+              const formattedPrice = typeof task.price === 'number' ? task.price.toLocaleString("vi-VN") + "đ" : task.price;
+              const taskerName = task.taskerId?.fullName || "Đối tác giúp việc";
+              return (
+                <View key={task._id || task.id} style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#E5E7EB', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <View style={{ backgroundColor: '#F0FDF4', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '800', color: '#15803D' }}>
+                        {task.status === 'cancelled' ? "✗ Đã hủy" : "✓ Đã hoàn thành"}
+                      </Text>
                     </View>
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: '#EA580C' }}>{formattedPrice}</Text>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => router.push({
-                      pathname: "/(tabs)/job-details",
-                      params: { taskId: task.id }
-                    })}
-                    style={{ backgroundColor: '#F3F4F6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}
-                  >
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#4B5563' }}>Chi tiết</Text>
-                  </TouchableOpacity>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: '#111C2D', marginBottom: 6 }}>{task.title}</Text>
+                  <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 12 }}>📍 {task.address}</Text>
+
+                  <View style={{ height: 1, backgroundColor: '#F3F4F6', marginBottom: 12 }} />
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                      <Image
+                        source={{ uri: task.taskerId?.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/png?seed=' + taskerName }}
+                        style={{ width: 28, height: 28, borderRadius: 14 }}
+                      />
+                      <View style={{ flex: 1, marginLeft: 8 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#374151' }}>Tasker: {taskerName}</Text>
+                        {task.review ? (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 }}>
+                            <Ionicons name="star" size={12} color="#FBBF24" />
+                            <Text style={{ fontSize: 11, fontWeight: '700', color: '#7E3000' }}>{task.review.rating}/5 sao</Text>
+                            <Text style={{ fontSize: 11, color: '#6B7280' }}> - {task.review.comment}</Text>
+                          </View>
+                        ) : (
+                          <Text style={{ fontSize: 11, color: '#9CA3AF', fontStyle: 'italic', marginTop: 2 }}>Chưa gửi đánh giá</Text>
+                        )}
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => router.push({
+                        pathname: "/(tabs)/job-details",
+                        params: { taskId: task._id || task.id }
+                      })}
+                      style={{ backgroundColor: '#F3F4F6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#4B5563' }}>Chi tiết</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-            ))
+              );
+            })
           )}
         </ScrollView>
       )}
-
-      {/* Proof of Work Review Modal */}
-      <Modal visible={proofModalVisible} animationType="slide" transparent>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: '#111827' }}>Ảnh Bằng Chứng Hoàn Thành</Text>
-              <TouchableOpacity onPress={() => setProofModalVisible(false)}>
-                <Ionicons name="close-circle" size={24} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={{ fontSize: 13, color: '#4B5563', marginBottom: 14 }}>
-              Tasker đã tải lên 2 ảnh sau khi vệ sinh xong căn hộ:
-            </Text>
-
-            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
-              <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&auto=format&fit=crop' }}
-                style={{ flex: 1, height: 140, borderRadius: 12 }}
-              />
-              <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?w=600&auto=format&fit=crop' }}
-                style={{ flex: 1, height: 140, borderRadius: 12 }}
-              />
-            </View>
-
-            <TouchableOpacity
-              onPress={() => {
-                setProofModalVisible(false);
-                handleReleaseEscrow();
-              }}
-              style={{ backgroundColor: '#16A34A', paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}
-            >
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Đã Xem & Đồng Ý Giải Ngân</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Dispute Modal */}
-      <Modal visible={disputeModalVisible} animationType="slide" transparent>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: '#DC2626' }}>Gửi Khiếu Nại / Báo Cáo Sự Cố</Text>
-              <TouchableOpacity onPress={() => setDisputeModalVisible(false)}>
-                <Ionicons name="close-circle" size={24} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={{ fontSize: 12, color: '#4B5563', marginBottom: 6 }}>Lý do khiếu nại:</Text>
-            <TextInput
-              value={disputeReason}
-              onChangeText={setDisputeReason}
-              multiline
-              numberOfLines={4}
-              style={{ backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 12, padding: 12, fontSize: 13, color: '#111827', marginBottom: 16 }}
-            />
-
-            <TouchableOpacity
-              onPress={handleSendDispute}
-              style={{ backgroundColor: '#DC2626', paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}
-            >
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Gửi Yêu Cầu Tranh Chấp Cho Admin</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-      {/* Review Modal */}
-      <Modal visible={reviewModalVisible} animationType="slide" transparent>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: Colors.primary }}>Đánh Giá Tasker (Review)</Text>
-              <TouchableOpacity onPress={() => setReviewModalVisible(false)}>
-                <Ionicons name="close-circle" size={24} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={{ fontSize: 13, color: '#4B5563', marginBottom: 10 }}>
-              Đánh giá chất lượng dịch vụ của {activeTask?.assignedTasker || "Tasker"}:
-            </Text>
-
-            <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'center', marginBottom: 20 }}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity key={star} onPress={() => setRating(star)}>
-                  <Ionicons
-                    name={star <= rating ? "star" : "star-outline"}
-                    size={36}
-                    color={Colors.star}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={{ fontSize: 12, color: '#4B5563', marginBottom: 6 }}>Nhận xét chi tiết:</Text>
-            <TextInput
-              value={reviewComment}
-              onChangeText={setReviewComment}
-              placeholder="Nhập ý kiến của bạn về thái độ làm việc, chất lượng..."
-              multiline
-              numberOfLines={3}
-              style={{ backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 12, padding: 12, fontSize: 13, color: '#111827', marginBottom: 16 }}
-            />
-
-            <TouchableOpacity
-              onPress={handleSendReview}
-              style={{ backgroundColor: Colors.primary, paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}
-            >
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Gửi đánh giá</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }

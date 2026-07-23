@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Bell, CheckCircle2, ChevronRight, Headphones, Lock, LogOut, UserRound, WalletCards, Wrench, ShieldCheck, X, Upload } from 'lucide-react-native';
-import { useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View, Modal, Image, Alert } from 'react-native';
+import { useState, useEffect } from 'react';
+import { ScrollView, Text, TouchableOpacity, View, Modal, Image, Alert, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { mockTaskerData } from '../../../../mockdata';
 import { IconTile, TaskerCard, TaskerHeader, TaskerPill } from '../../taskerHomeLayout/components/TaskerPrimitives';
@@ -13,6 +13,7 @@ import { TaskHistoryScreen } from '../../taskerTasksLayout/screen/taskHistoryScr
 import { EarningsDashboardScreen } from './earningsDashboardScreen';
 import { ReviewsRatingsScreen } from './reviewsRatingsScreen';
 import { ScheduleCalendarScreen } from './scheduleCalendarScreen';
+import { userApi } from '../../../../service/api';
 
 type TaskerProfileScreenProps = {
   embedded?: boolean;
@@ -25,6 +26,16 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
   const [screen, setScreen] = useState<ProfileLocalScreen>('profile');
   const [kycStatus, setKycStatus] = useState<string>(mockTaskerData.profile.kycStatus || 'verified');
   const [kycModalVisible, setKycModalVisible] = useState<boolean>(false);
+  const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
+  
+  // Profile data states
+  const [profileData, setProfileData] = useState<any>(null);
+  const [bio, setBio] = useState("");
+  const [hourlyRate, setHourlyRate] = useState("");
+  const [experience, setExperience] = useState("");
+  const [skillsText, setSkillsText] = useState("");
+  const [serviceAreasText, setServiceAreasText] = useState("");
+
   const back = () => setScreen('profile');
   const navigate = (next: TaskerScreenKey) => {
     if (next === 'earnings' || next === 'reviews' || next === 'schedule' || next === 'nearby' || next === 'accept' || next === 'history') {
@@ -35,6 +46,29 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
   const handleLogout = () => {
     router.replace('/login');
   };
+
+  const loadProfile = () => {
+    userApi.getProfile()
+      .then((res: any) => {
+        // Axios client returns response data
+        const data = res.data || res;
+        setProfileData(data);
+        if (data.taskerProfile) {
+          setBio(data.taskerProfile.bio || "");
+          setHourlyRate(data.taskerProfile.hourlyRate?.toString() || "");
+          setExperience(data.taskerProfile.experience || "");
+          setSkillsText(data.taskerProfile.skills?.join(", ") || "");
+          setServiceAreasText(data.taskerProfile.serviceAreas?.join(", ") || "");
+        }
+      })
+      .catch((err) => {
+        console.error("Error loading profile:", err);
+      });
+  };
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
 
   if (screen === 'nearby') return <NearbyTasksScreen onBack={back} onNavigate={navigate} />;
   if (screen === 'accept') return <AcceptTaskScreen onBack={back} onNavigate={navigate} />;
@@ -60,10 +94,10 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
               </View>
             </View>
             <View className="items-center gap-2">
-              <Text className="text-[#111C2D] text-[28px] font-extrabold text-center">{profile.name}</Text>
-              <TaskerPill>{profile.title}</TaskerPill>
+              <Text className="text-[#111C2D] text-[28px] font-extrabold text-center">{profileData?.fullName || profile.name}</Text>
+              <TaskerPill>{profileData?.email || profile.title}</TaskerPill>
             </View>
-            <Text className="text-[#464555] text-center mt-4 leading-6">{profile.bio}</Text>
+            <Text className="text-[#464555] text-center mt-4 leading-6">{profileData?.taskerProfile?.bio || profile.bio}</Text>
             <View className="flex-row justify-between w-full mt-6">
               <ProfileStat value={`${profile.completedJobs}`} label="Công việc" />
               <View className="w-[1px] bg-[#C7C4D8]" />
@@ -169,7 +203,7 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
         <TaskerCard className="p-4 mb-5">
           <Text className="text-[#111C2D] text-[20px] font-extrabold mb-4">Kỹ năng</Text>
           <View className="flex-row flex-wrap gap-2">
-            {profile.skills.map((skill) => <TaskerPill key={skill}>{skill}</TaskerPill>)}
+            {(profileData?.taskerProfile?.skills || profile.skills).map((skill: string) => <TaskerPill key={skill}>{skill}</TaskerPill>)}
           </View>
         </TaskerCard>
 
@@ -187,7 +221,7 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
           <View className="px-4 py-5 border-b border-[#E7EEFF]">
             <Text className="text-[#111C2D] text-[20px] font-extrabold">Cài đặt tài khoản</Text>
           </View>
-          <SettingsRow icon={UserRound} title="Chỉnh sửa hồ sơ cá nhân" />
+          <SettingsRow icon={UserRound} title="Chỉnh sửa hồ sơ cá nhân" onPress={() => setEditModalVisible(true)} />
           <SettingsRow icon={Bell} title="Thông báo" subtitle="Bật/tắt thông báo đẩy và email" badge="Đang bật" />
           <SettingsRow icon={WalletCards} title="Phương thức thanh toán" subtitle="Quản lý ví và rút tiền" onPress={() => setScreen('earnings')} />
           <SettingsRow icon={Wrench} title="Đánh giá & nhận xét" subtitle="Xem uy tín từ khách hàng" onPress={() => setScreen('reviews')} />
@@ -276,6 +310,95 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
                   <Text className="text-white font-bold text-base">Gửi duyệt KYC ngay</Text>
                 </TouchableOpacity>
               )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit Profile Modal */}
+      <Modal visible={editModalVisible} animationType="slide" transparent>
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-white rounded-t-3xl p-5 max-h-[85%]">
+            <View className="flex-row items-center justify-between border-b border-gray-100 pb-3 mb-4">
+              <View className="flex-row items-center gap-2">
+                <UserRound size={24} color="#3525CD" />
+                <Text className="text-[#111C2D] text-[18px] font-bold">Chỉnh sửa hồ sơ chuyên môn</Text>
+              </View>
+              <TouchableOpacity onPress={() => setEditModalVisible(false)} className="p-1 bg-gray-100 rounded-full">
+                <X size={20} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-6">
+              <Text className="text-gray-600 text-xs mb-1 font-bold">Giới thiệu bản thân (Bio):</Text>
+              <TextInput
+                value={bio}
+                onChangeText={setBio}
+                placeholder="Nhập giới thiệu..."
+                className="bg-gray-100 border border-gray-300 rounded-xl p-3 text-sm text-gray-800 mb-4"
+                multiline
+                numberOfLines={3}
+              />
+
+              <Text className="text-gray-600 text-xs mb-1 font-bold">Mức lương giờ (VNĐ/giờ):</Text>
+              <TextInput
+                value={hourlyRate}
+                onChangeText={setHourlyRate}
+                placeholder="Ví dụ: 100000"
+                keyboardType="numeric"
+                className="bg-gray-100 border border-gray-300 rounded-xl p-3 text-sm text-gray-800 mb-4"
+              />
+
+              <Text className="text-gray-600 text-xs mb-1 font-bold font-bold">Kinh nghiệm làm việc:</Text>
+              <TextInput
+                value={experience}
+                onChangeText={setExperience}
+                placeholder="Mô tả kinh nghiệm..."
+                className="bg-gray-100 border border-gray-300 rounded-xl p-3 text-sm text-gray-800 mb-4"
+                multiline
+                numberOfLines={2}
+              />
+
+              <Text className="text-gray-600 text-xs mb-1 font-bold">Kỹ năng (phân tách bằng dấu phẩy):</Text>
+              <TextInput
+                value={skillsText}
+                onChangeText={setSkillsText}
+                placeholder="VD: Dọn dẹp, Giặt ủi, Nấu ăn"
+                className="bg-gray-100 border border-gray-300 rounded-xl p-3 text-sm text-gray-800 mb-4"
+              />
+
+              <Text className="text-gray-600 text-xs mb-1 font-bold">Khu vực phục vụ (phân tách bằng dấu phẩy):</Text>
+              <TextInput
+                value={serviceAreasText}
+                onChangeText={setServiceAreasText}
+                placeholder="VD: Quận 1, Quận Bình Thạnh"
+                className="bg-gray-100 border border-gray-300 rounded-xl p-3 text-sm text-gray-800 mb-5"
+              />
+
+              <TouchableOpacity
+                onPress={() => {
+                  const data = {
+                    bio,
+                    hourlyRate: Number(hourlyRate) || 0,
+                    experience,
+                    skills: skillsText.split(",").map(s => s.trim()).filter(Boolean),
+                    serviceAreas: serviceAreasText.split(",").map(s => s.trim()).filter(Boolean)
+                  };
+                  userApi.updateTaskerProfile(data)
+                    .then((res: any) => {
+                      setProfileData(res.data || res);
+                      Alert.alert("Thành công", "Đã cập nhật hồ sơ chuyên môn!");
+                      setEditModalVisible(false);
+                    })
+                    .catch((err) => {
+                      console.error(err);
+                      Alert.alert("Thất bại", "Cập nhật hồ sơ thất bại.");
+                    });
+                }}
+                className="bg-[#3525CD] py-3.5 rounded-xl items-center"
+              >
+                <Text className="text-white font-bold text-base">Lưu thay đổi</Text>
+              </TouchableOpacity>
             </ScrollView>
           </View>
         </View>

@@ -1,6 +1,6 @@
 // screens/CheckoutScreen.js
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import type { ComponentProps } from "react";
 import { useState } from "react";
 import {
@@ -17,9 +17,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // Constants & Store
+import { addTask } from "../../session";
 import Colors from "../constants/Colors";
 import Layout from "../constants/Layout";
-import { addTask } from "../../session";
+import { paymentApi, taskApplicationApi } from "../../../service/api";
+import { ActivityIndicator } from "react-native";
 
 export default function ClientCheckoutScreen() {
   const router = useRouter();
@@ -51,66 +53,74 @@ export default function ClientCheckoutScreen() {
     iconName: ComponentProps<typeof Ionicons>["name"];
     color: string;
   }[] = [
-    {
-      id: "momo",
-      title: "Ví MoMo",
-      subtitle: "Đã liên kết",
-      iconName: "wallet",
-      color: "#A50064",
-    },
-    {
-      id: "vnpay",
-      title: "VNPAY",
-      subtitle: "",
-      iconName: "qr-code",
-      color: "#005BAA",
-    },
-    {
-      id: "credit",
-      title: "Thẻ tín dụng / Ghi nợ",
-      subtitle: "",
-      iconName: "card",
-      color: Colors.inverseSurface,
-    },
-    {
-      id: "cash",
-      title: "Tiền mặt",
-      subtitle: "",
-      iconName: "cash",
-      color: Colors.success,
-    },
-  ];
+      {
+        id: "momo",
+        title: "Ví MoMo",
+        subtitle: "Đã liên kết",
+        iconName: "wallet",
+        color: "#A50064",
+      },
+      {
+        id: "vnpay",
+        title: "VNPAY",
+        subtitle: "",
+        iconName: "qr-code",
+        color: "#005BAA",
+      },
+      {
+        id: "credit",
+        title: "Thẻ tín dụng / Ghi nợ",
+        subtitle: "",
+        iconName: "card",
+        color: Colors.inverseSurface,
+      },
+      {
+        id: "cash",
+        title: "Tiền mặt",
+        subtitle: "",
+        iconName: "cash",
+        color: Colors.success,
+      },
+    ];
+
+  const [isPaying, setIsPaying] = useState(false);
 
   const handlePay = () => {
-    const newTaskId = "task_" + Math.floor(Math.random() * 1000000);
-    addTask({
-      id: newTaskId,
-      category: "Dọn dẹp",
-      title: taskName,
-      description: taskDesc,
-      price: formattedBudget,
-      rawBudget: rawBudget,
-      distance: "0.5 km",
-      postedAgo: "Vừa xong",
-      address: address,
-      time: dateVal + ", " + timeVal,
-      duration: "3 giờ",
-      customer: "Nguyễn Thị Thu Hà",
-      customerRating: "4.9",
-      status: "OPEN",
-      escrowStatus: "ESCROWED",
-      icon: "cleaning"
-    });
-
-    const successMsg = "Thanh toán thành công! Task của bạn đã được đăng lên hệ thống và chuyển trạng thái sang OPEN.";
-
-    if (Platform.OS === "web") {
-      alert(successMsg);
-    } else {
-      Alert.alert("Ký quỹ thành công", successMsg);
+    if (!params.taskId) {
+      Alert.alert("Lỗi", "Không tìm thấy thông tin công việc.");
+      return;
     }
 
-    router.replace("/(tabs)");
+    setIsPaying(true);
+
+    paymentApi.createPayment({
+      taskId: params.taskId,
+      amount: rawBudget,
+      provider: selectedPayment,
+      applicationId: params.applicationId || undefined
+    })
+      .then(() => {
+        // If an application ID is present, we accept it automatically
+        if (params.applicationId) {
+          return taskApplicationApi.acceptApplication(params.applicationId);
+        }
+        return Promise.resolve(null);
+      })
+      .then(() => {
+        setIsPaying(false);
+        const successMsg = "Thanh toán ký quỹ thành công! Ứng viên đã được duyệt và chuyển sang thực hiện.";
+        if (Platform.OS === "web") {
+          alert(successMsg);
+        } else {
+          Alert.alert("Thành công", successMsg);
+        }
+        router.replace("/(tabs)");
+      })
+      .catch((err: any) => {
+        setIsPaying(false);
+        const errMsg = err.message || "Giao dịch thanh toán thất bại. Vui lòng thử lại.";
+        Alert.alert("Lỗi thanh toán", errMsg);
+      });
   };
 
   const handleCancel = () => {
@@ -307,12 +317,19 @@ export default function ClientCheckoutScreen() {
 
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <TouchableOpacity
-            style={[styles.payButton, { flex: 1 }]}
+            style={[styles.payButton, { flex: 1 }, isPaying && { backgroundColor: Colors.outline }]}
             activeOpacity={0.8}
             onPress={handlePay}
+            disabled={isPaying}
           >
-            <Ionicons name="lock-closed" size={18} color={Colors.white} />
-            <Text style={styles.payButtonText}>Ký quỹ (SUCCESS)</Text>
+            {isPaying ? (
+              <ActivityIndicator color={Colors.white} />
+            ) : (
+              <>
+                <Ionicons name="lock-closed" size={18} color={Colors.white} />
+                <Text style={styles.payButtonText}>Ký quỹ (SUCCESS)</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity

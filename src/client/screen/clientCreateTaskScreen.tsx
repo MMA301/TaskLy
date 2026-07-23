@@ -1,7 +1,7 @@
 // screens/CreateTaskScreen.js
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Alert,
   Platform,
@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Button from "../components/Button";
 import Colors from "../constants/Colors";
 import Layout from "../constants/Layout";
+import { categoryApi, taskApi } from "../../../service/api";
 
 export default function ClientCreateTaskScreen() {
   const router = useRouter();
@@ -32,38 +33,191 @@ export default function ClientCreateTaskScreen() {
   const [address, setAddress] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  const [dateError, setDateError] = useState("");
+  const [timeError, setTimeError] = useState("");
   const [budget, setBudget] = useState(initialRate ? "200000" : "");
 
+  // API dynamic states
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    categoryApi.getCategories()
+      .then((res: any) => {
+        setCategories(res);
+        if (res && res.length > 0) {
+          setSelectedCategoryId(res[0]._id || res[0].id);
+        }
+      })
+      .catch((err) => {
+        console.error("Lỗi khi tải danh mục:", err);
+      });
+  }, []);
+
+  const formatBudgetInput = (text: string) => {
+    const cleaned = text.replace(/\D/g, ""); // keep only digits
+    if (!cleaned) return "";
+    return Number(cleaned).toLocaleString("en-US"); // formats with commas
+  };
+
   const handleApplyAISuggestion = () => {
-    setBudget("250000"); // apply recommendations
+    setBudget(formatBudgetInput("250000")); // apply recommendations with commas
+  };
+
+  const getCategoryIcon = (name: string): any => {
+    const n = name.toLowerCase();
+    if (n.includes("dọn") || n.includes("sạch")) return "sparkles-outline";
+    if (n.includes("chuyển") || n.includes("giao") || n.includes("đồ")) return "cube-outline";
+    if (n.includes("lắp") || n.includes("sửa") || n.includes("setup")) return "build-outline";
+    if (n.includes("chợ") || n.includes("mua")) return "cart-outline";
+    return "time-outline";
+  };
+
+  const showAlert = (title: string, message: string) => {
+    if (Platform.OS === "web") {
+      alert(`${title}: ${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
+  const formatDateInput = (text: string) => {
+    const cleaned = text.replace(/\D/g, ""); // keep only digits
+    let formatted = cleaned;
+    if (cleaned.length > 2) {
+      formatted = `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
+    }
+    if (cleaned.length > 4) {
+      formatted = `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4, 8)}`;
+    }
+    return formatted.slice(0, 10); // max length 10 (dd/mm/yyyy)
+  };
+
+  const formatTimeInput = (text: string) => {
+    const cleaned = text.replace(/\D/g, ""); // keep only digits
+    let formatted = cleaned;
+    if (cleaned.length > 2) {
+      formatted = `${cleaned.slice(0, 2)}:${cleaned.slice(2, 4)}`;
+    }
+    return formatted.slice(0, 5); // max length 5 (hh:mm)
+  };
+
+  /**
+   * Trả về true nếu ngày/giờ hợp lệ và KHÔNG ở trong quá khứ.
+   * dateStr: dd/mm/yyyy, timeStr: hh:mm (có thể để trống — chỉ check ngày).
+   */
+  const validateDateTime = (dateStr: string, timeStr: string): string => {
+    if (!dateStr || dateStr.length < 10) return "Vui lòng nhập đầy đủ ngày (dd/mm/yyyy).";
+    const [dd, mm, yyyy] = dateStr.split("/").map(Number);
+    if (!dd || !mm || !yyyy || mm < 1 || mm > 12 || dd < 1 || dd > 31)
+      return "Ngày không hợp lệ.";
+
+    const now = new Date();
+    let selectedDate: Date;
+
+    if (timeStr && timeStr.length === 5) {
+      const [hh, mins] = timeStr.split(":").map(Number);
+      if (hh > 23 || mins > 59) return "Giờ không hợp lệ (hh:mm).";
+      selectedDate = new Date(yyyy, mm - 1, dd, hh, mins, 0, 0);
+    } else {
+      // Nếu chưa nhập giờ, so sánh theo ngày (bắt đầu ngày đó)
+      selectedDate = new Date(yyyy, mm - 1, dd, 0, 0, 0, 0);
+    }
+
+    if (isNaN(selectedDate.getTime())) return "Ngày không hợp lệ.";
+    if (selectedDate <= now) return "Thời gian thực hiện phải ở tương lai.";
+    return "";
+  };
+
+  const validateDateOnly = (dateStr: string): string => {
+    if (!dateStr || dateStr.length < 10) return "";
+    const [dd, mm, yyyy] = dateStr.split("/").map(Number);
+    if (!dd || !mm || !yyyy || mm < 1 || mm > 12 || dd < 1 || dd > 31)
+      return "Ngày không hợp lệ.";
+    const now = new Date();
+    const selected = new Date(yyyy, mm - 1, dd, 23, 59, 59);
+    if (isNaN(selected.getTime())) return "Ngày không hợp lệ.";
+    if (selected < now) return "Ngày phải từ hôm nay trở đi.";
+    return "";
+  };
+
+  const validateTimeOnly = (timeStr: string, dateStr: string): string => {
+    if (!timeStr || timeStr.length < 5) return "";
+    const [hh, mins] = timeStr.split(":").map(Number);
+    if (hh > 23 || mins > 59) return "Giờ không hợp lệ (hh:mm).";
+    if (dateStr && dateStr.length === 10) {
+      const [dd, mm, yyyy] = dateStr.split("/").map(Number);
+      const selected = new Date(yyyy, mm - 1, dd, hh, mins, 0, 0);
+      if (!isNaN(selected.getTime()) && selected <= new Date())
+        return "Thời gian phải ở tương lai.";
+    }
+    return "";
   };
 
   const handleSubmit = () => {
-    if (!taskName || !taskDesc || !address || !budget) {
-      if (Platform.OS === "web") {
-        alert(
-          "Vui lòng điền đầy đủ thông tin: Tên công việc, mô tả, địa chỉ và ngân sách.",
-        );
-      } else {
-        Alert.alert(
-          "Thiếu thông tin",
-          "Vui lòng điền đầy đủ các thông tin cần thiết.",
-        );
-      }
+    // 1. Validate Category
+    if (!selectedCategoryId) {
+      showAlert("Thiếu thông tin", "Vui lòng chọn danh mục công việc.");
       return;
     }
 
-    router.push({
-      pathname: "/(tabs)/checkout",
-      params: {
-        taskName,
-        taskDesc,
-        address,
-        date: date || "Hôm nay",
-        time: time || "14:00",
-        budget: budget,
-      },
-    });
+    // 2. Validate Title (3-150 characters)
+    if (!taskName || taskName.trim().length < 3 || taskName.trim().length > 150) {
+      showAlert("Thiếu thông tin", "Tên công việc phải có độ dài từ 3 đến 150 ký tự.");
+      return;
+    }
+
+    // 3. Validate Address
+    if (!address || !address.trim()) {
+      showAlert("Thiếu thông tin", "Vui lòng cung cấp địa chỉ thực hiện.");
+      return;
+    }
+
+    // 4. Validate Date & Time (không được ở quá khứ)
+    const dtError = validateDateTime(date, time);
+    if (dtError) {
+      setDateError(dtError);
+      showAlert("Thời gian không hợp lệ", dtError);
+      return;
+    }
+
+    // 4. Validate Budget
+    const cleanBudget = budget.replace(/[^0-9]/g, '');
+    if (!cleanBudget) {
+      showAlert("Thiếu thông tin", "Vui lòng nhập ngân sách công việc.");
+      return;
+    }
+
+    const priceNum = Number(cleanBudget);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      showAlert("Lỗi", "Ngân sách phải là một số dương hợp lệ.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    taskApi.createTask({
+      categoryId: selectedCategoryId,
+      title: taskName.trim(),
+      description: taskDesc.trim(),
+      address: address.trim(),
+      price: priceNum,
+      location: {
+        type: 'Point',
+        coordinates: [106.660172, 10.762622]
+      }
+    })
+      .then((createdTask: any) => {
+        setIsLoading(false);
+        showAlert("Thành công", "Đăng bài tuyển dụng thành công! Vui lòng chờ ứng viên nộp đơn.");
+        router.replace("/(tabs)");
+      })
+      .catch((err: any) => {
+        setIsLoading(false);
+        const errMsg = err.message || "Tạo công việc thất bại. Vui lòng thử lại!";
+        Alert.alert("Thất bại", errMsg);
+      });
   };
 
   return (
@@ -81,6 +235,44 @@ export default function ClientCreateTaskScreen() {
 
         {/* Section 1: Basic Info */}
         <View style={styles.card}>
+          <Text style={styles.sectionHeader}>DANH MỤC CÔNG VIỆC</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryScroll}
+            style={{ marginBottom: 15 }}
+          >
+            {categories.map((cat) => {
+              const isSelected = selectedCategoryId === cat._id;
+              return (
+                <TouchableOpacity
+                  key={cat._id}
+                  onPress={() => setSelectedCategoryId(cat._id)}
+                  style={[
+                    styles.categoryChip,
+                    isSelected && styles.categoryChipSelected,
+                  ]}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name={getCategoryIcon(cat.name)}
+                    size={14}
+                    color={isSelected ? Colors.white : Colors.primary}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text
+                    style={[
+                      styles.categoryChipText,
+                      isSelected && styles.categoryChipTextSelected,
+                    ]}
+                  >
+                    {cat.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
           <Text style={styles.sectionHeader}>THÔNG TIN CƠ BẢN</Text>
 
           <View style={styles.inputGroup}>
@@ -142,13 +334,29 @@ export default function ClientCreateTaskScreen() {
                   style={styles.fieldIcon}
                 />
                 <TextInput
-                  style={styles.textInputWithIcon}
-                  placeholder="mm/dd/yyyy"
+                  style={[
+                    styles.textInputWithIcon,
+                    dateError ? { borderColor: "#EF4444" } : undefined,
+                  ]}
+                  placeholder="dd/mm/yyyy"
                   placeholderTextColor={Colors.outline}
+                  keyboardType="numeric"
                   value={date}
-                  onChangeText={setDate}
+                  onChangeText={(val) => {
+                    const formatted = formatDateInput(val);
+                    setDate(formatted);
+                    if (dateError) setDateError("");
+                  }}
+                  onBlur={() => {
+                    const err = validateDateOnly(date);
+                    setDateError(err);
+                    if (!err && time) setTimeError(validateTimeOnly(time, date));
+                  }}
                 />
               </View>
+            {dateError ? (
+              <Text style={{ color: "#EF4444", fontSize: 11, marginTop: 4, marginLeft: 2 }}>{dateError}</Text>
+            ) : null}
             </View>
 
             <View style={[styles.inputGroup, styles.flexHalf]}>
@@ -161,13 +369,28 @@ export default function ClientCreateTaskScreen() {
                   style={styles.fieldIcon}
                 />
                 <TextInput
-                  style={styles.textInputWithIcon}
-                  placeholder="--:-- --"
+                  style={[
+                    styles.textInputWithIcon,
+                    timeError ? { borderColor: "#EF4444" } : undefined,
+                  ]}
+                  placeholder="hh:mm"
                   placeholderTextColor={Colors.outline}
+                  keyboardType="numeric"
                   value={time}
-                  onChangeText={setTime}
+                  onChangeText={(val) => {
+                    const formatted = formatTimeInput(val);
+                    setTime(formatted);
+                    if (timeError) setTimeError("");
+                  }}
+                  onBlur={() => {
+                    const err = validateTimeOnly(time, date);
+                    setTimeError(err);
+                  }}
                 />
               </View>
+            {timeError ? (
+              <Text style={{ color: "#EF4444", fontSize: 11, marginTop: 4, marginLeft: 2 }}>{timeError}</Text>
+            ) : null}
             </View>
           </View>
         </View>
@@ -191,7 +414,7 @@ export default function ClientCreateTaskScreen() {
                 placeholderTextColor={Colors.outline}
                 keyboardType="numeric"
                 value={budget}
-                onChangeText={setBudget}
+                onChangeText={(val) => setBudget(formatBudgetInput(val))}
               />
             </View>
           </View>
@@ -239,7 +462,7 @@ export default function ClientCreateTaskScreen() {
 
         {/* Form Submit Button */}
         <View style={styles.buttonContainer}>
-          <Button title="Đăng bài" onPress={handleSubmit} />
+          <Button title={isLoading ? "Đang xử lý..." : "Đăng bài"} onPress={handleSubmit} disabled={isLoading} />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -426,5 +649,32 @@ const styles = StyleSheet.create({
   buttonContainer: {
     padding: Layout.spacing.md,
     marginTop: Layout.spacing.lg,
+  },
+  categoryScroll: {
+    paddingRight: Layout.spacing.md,
+    gap: 8,
+  },
+  categoryChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.outlineVariant,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  categoryChipSelected: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  categoryChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.onSurfaceVariant,
+  },
+  categoryChipTextSelected: {
+    color: Colors.white,
+    fontWeight: '600',
   },
 });

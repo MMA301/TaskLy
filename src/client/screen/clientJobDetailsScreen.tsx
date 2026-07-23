@@ -1,712 +1,1013 @@
-// screens/JobDetailsScreen.js
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import {
+  Alert,
   Image,
+  Platform,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
-  Alert
+  Modal,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-
-// Constants & Store
-import Colors from "../constants/Colors";
-import Layout from "../constants/Layout";
-import { getTasks, subscribe, acceptTasker, getAuthSession, Task } from "../../session";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  getAuthSession,
+  subscribe,
+  Task,
+} from "../../session";
+import { taskApi, taskApplicationApi, paymentApi, reviewApi } from "../../../service/api";
+import { ActivityIndicator } from "react-native";
 
 export default function ClientJobDetailsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ task?: string; taskId?: string }>();
   const initialTask = params.task ? JSON.parse(params.task as string) : null;
   const initialTaskId = params.taskId || (initialTask ? initialTask.id : null);
 
-  const [currentTask, setCurrentTask] = useState<Task | null>(() => {
-    const allTasks = getTasks();
-    let matched = allTasks.find(t => t.id === initialTaskId);
-    if (!matched && initialTask) {
-      matched = allTasks.find(t => t.title === initialTask.title);
-    }
-    if (matched) return matched;
-    if (initialTask) {
-      return {
-        id: initialTask.id || 'temp',
-        category: initialTask.category || 'Cleaning',
-        title: initialTask.title || 'Dọn dẹp căn hộ 2 phòng ngủ',
-        description: initialTask.description || 'Mô tả công việc...',
-        price: initialTask.budget || '500.000đ',
-        rawBudget: 500000,
-        distance: initialTask.distance || '1.2 km',
-        postedAgo: 'Vừa xong',
-        address: 'Sunrise City, Quận 7',
-        time: 'Hôm nay',
-        duration: '3 giờ',
-        customer: 'Thu Hà',
-        customerRating: '4.9',
-        status: 'OPEN',
-        escrowStatus: 'ESCROWED',
-        applicants: [],
-        assignedTasker: null
-      };
-    }
-    return null;
-  });
+  const session = getAuthSession();
+  const isClient = session?.role === "client";
 
+  // Task & Applications states
+  const [task, setTask] = useState<any>(initialTask);
+  const [applications, setApplications] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(initialTaskId ? true : false);
+
+  // Edit fields state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(task?.title || "");
+  const [editDesc, setEditDesc] = useState(task?.description || "");
+  const [editAddress, setEditAddress] = useState(task?.address || "");
+  const [editPrice, setEditPrice] = useState(
+    task?.price?.toString() || task?.rawBudget?.toString() || ""
+  );
+  const [editLat, setEditLat] = useState(
+    task?.location?.coordinates ? task.location.coordinates[1]?.toString() : "10.762622"
+  );
+  const [editLng, setEditLng] = useState(
+    task?.location?.coordinates ? task.location.coordinates[0]?.toString() : "106.660172"
+  );
+
+  // Fetch task and applications on mount / id change
   useEffect(() => {
-    const findAndSetTask = () => {
-      const allTasks = getTasks();
-      let matched = allTasks.find(t => t.id === initialTaskId);
-      if (!matched && initialTask) {
-        matched = allTasks.find(t => t.title === initialTask.title);
-      }
-      if (matched) {
-        setCurrentTask(matched);
-      }
-    };
+    if (initialTaskId) {
+      Promise.resolve().then(() => setIsLoading(true));
+      
+      // Fetch task details
+      taskApi.getTaskById(initialTaskId)
+        .then((res: any) => {
+          setTask(res);
+          setEditTitle(res.title || "");
+          setEditDesc(res.description || "");
+          setEditAddress(res.address || "");
+          setEditPrice(res.price?.toString() || "");
+          if (res.location?.coordinates) {
+            setEditLng(res.location.coordinates[0]?.toString() || "106.660172");
+            setEditLat(res.location.coordinates[1]?.toString() || "10.762622");
+          }
+        })
+        .catch((err) => {
+          console.error("Lỗi khi tải chi tiết công việc:", err);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
 
-    const unsubscribe = subscribe(findAndSetTask);
-    return unsubscribe;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialTaskId, params.task]);
+      // Fetch applicants
+      taskApplicationApi.getApplications({ taskId: initialTaskId } as any)
+        .then((res: any) => {
+          setApplications(res);
+        })
+        .catch((err) => {
+          console.error("Lỗi khi tải danh sách ứng viên:", err);
+        });
+    }
+  }, [initialTaskId]);
 
-  const activeTask = currentTask || {
-    id: "task_01",
-    category: "Cleaning",
-    title: "Dọn dẹp căn hộ 2 phòng ngủ",
-    description: "Mình cần một bạn dọn dẹp căn hộ 2 phòng ngủ, 1 phòng khách, 2 WC tại chung cư Sunrise City. Yêu cầu làm kỹ, sạch sẽ.",
-    distance: "1.2 km",
-    rating: "4.9",
-    budget: "200.000đ",
-    price: "200.000đ",
-    rawBudget: 200000,
-    postedAgo: "2 giờ trước",
-    address: "Sunrise City, Quận 7, TP. Hồ Chí Minh",
-    time: "Hôm nay, 14:00",
-    duration: "2 giờ",
-    customer: "Nguyễn Thị Thu Hà",
-    customerRating: "4.9",
-    applicants: ["Nguyễn Minh Đức"] as string[],
-    assignedTasker: null as string | null,
-    status: "OPEN" as any,
-    avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop",
+  // Review fields state
+  const [rating, setRating] = useState(5);
+  const [selectedTaskerProfile, setSelectedTaskerProfile] = useState<any>(null);
+  const [reviewComment, setReviewComment] = useState("");
+
+  if (isLoading && !task) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center p-6">
+        <ActivityIndicator size="large" color="#EA580C" />
+      </SafeAreaView>
+    );
+  }
+
+  if (!task) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center p-6">
+        <Ionicons name="alert-circle-outline" size={48} color="#EA580C" />
+        <Text className="text-slate-800 font-bold text-lg mt-3">Không tìm thấy công việc</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="mt-4 bg-orange-500 px-6 py-2.5 rounded-xl"
+        >
+          <Text className="text-white font-bold">Quay lại</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  // Derived state
+  const isUnpaid = task.paymentStatus === "pending" || task.paymentStatus === "refunded" || !task.paymentStatus;
+  const isEscrowed = task.paymentStatus === "paid";
+  const isReleased = task.paymentStatus === "released";
+
+  const handleSaveEdit = () => {
+    if (!editTitle.trim() || !editAddress.trim() || !editPrice.trim()) {
+      showAlert("Lỗi", "Vui lòng nhập đầy đủ: Tên công việc, địa chỉ và ngân sách.");
+      return;
+    }
+
+    const priceNum = Number(editPrice.replace(/[^0-9]/g, ""));
+    setIsLoading(true);
+    taskApi.updateTask(task._id || task.id, {
+      title: editTitle.trim(),
+      description: editDesc.trim(),
+      address: editAddress.trim(),
+      price: priceNum,
+      location: {
+        type: "Point",
+        coordinates: [Number(editLng) || 0, Number(editLat) || 0],
+      },
+    })
+      .then((updatedTask: any) => {
+        setIsLoading(false);
+        setTask(updatedTask);
+        setIsEditing(false);
+        showAlert("Thành công", "Đã cập nhật thông tin công việc!");
+      })
+      .catch((err: any) => {
+        setIsLoading(false);
+        showAlert("Thất bại", err.message || "Cập nhật thất bại.");
+      });
   };
 
-  const handleApply = () => {
-    router.push({
-      pathname: "/(tabs)/checkout",
-      params: {
-        taskName: activeTask.title,
-        taskDesc: activeTask.description,
-        address: activeTask.address,
-        time: activeTask.time,
-        budget: activeTask.price
-      }
-    });
+  const handleCancelTask = () => {
+    if (Platform.OS === "web") {
+      const confirm = window.confirm("Bạn có chắc chắn muốn hủy bỏ công việc này?");
+      if (confirm) executeCancel();
+    } else {
+      Alert.alert("Hủy công việc", "Bạn có chắc muốn xóa vĩnh viễn bài đăng này?", [
+        { text: "Không", style: "cancel" },
+        { text: "Đồng ý hủy", style: "destructive", onPress: executeCancel },
+      ]);
+    }
+  };
+
+  const executeCancel = () => {
+    setIsLoading(true);
+    taskApi.cancelTask(task._id || task.id)
+      .then(() => {
+        setIsLoading(false);
+        showAlert("Đã hủy", "Đã xóa bài đăng thành công.");
+        router.replace("/(tabs)");
+      })
+      .catch((err: any) => {
+        setIsLoading(false);
+        showAlert("Thất bại", err.message || "Hủy công việc thất bại.");
+      });
+  };
+
+  const handlePayEscrow = (method: string) => {
+    showAlert("Thông báo", "Vui lòng duyệt một ứng viên bên dưới để thực hiện ký quỹ thanh toán.");
+  };
+
+  const handleRefund = () => {
+    if (Platform.OS === "web") {
+      const confirm = window.confirm("Yêu cầu hoàn tiền và hủy phân công công việc này về ví của bạn?");
+      if (confirm) executeRefund();
+    } else {
+      Alert.alert(
+        "Hoàn tiền ký quỹ",
+        "Hệ thống sẽ hoàn trả số tiền ký quỹ về ví của bạn và đặt công việc về trạng thái ban đầu?",
+        [
+          { text: "Không", style: "cancel" },
+          { text: "Đồng ý hoàn tiền", onPress: executeRefund },
+        ]
+      );
+    }
+  };
+
+  const executeRefund = () => {
+    setIsLoading(true);
+    paymentApi.getMyPayments({ taskId: task._id || task.id })
+      .then((res: any) => {
+        const activePayment = res.find((p: any) => p.status === "paid");
+        if (activePayment) {
+          return paymentApi.refundPayment(activePayment._id);
+        }
+        throw new Error("Không tìm thấy giao dịch ký quỹ đang hoạt động.");
+      })
+      .then(() => {
+        showAlert("Thành công", "Đã hoàn tiền thành công!");
+        return taskApi.getTaskById(task._id || task.id);
+      })
+      .then((res: any) => {
+        setIsLoading(false);
+        setTask(res);
+      })
+      .catch((err: any) => {
+        setIsLoading(false);
+        showAlert("Thất bại", err.message || "Hoàn tiền ký quỹ thất bại.");
+      });
+  };
+
+  const handleReleasePayment = () => {
+    setIsLoading(true);
+    taskApi.completeTask(task._id || task.id)
+      .then((res: any) => {
+        setIsLoading(false);
+        setTask(res);
+        showAlert("Giải ngân", "Đã giải ngân tiền thành công cho Tasker!");
+      })
+      .catch((err: any) => {
+        setIsLoading(false);
+        showAlert("Thất bại", err.message || "Giải ngân thất bại.");
+      });
+  };
+
+  const handleConfirmComplete = () => {
+    setIsLoading(true);
+    taskApi.completeTask(task._id || task.id)
+      .then((res: any) => {
+        setIsLoading(false);
+        setTask(res);
+        showAlert("Hoàn thành", "Công việc đã xác nhận hoàn thành! Số tiền ký quỹ tự động giải ngân cho Tasker.");
+      })
+      .catch((err: any) => {
+        setIsLoading(false);
+        showAlert("Thất bại", err.message || "Xác nhận hoàn thành thất bại.");
+      });
+  };
+
+  const handleRejectApplicant = (applicationId: string, name: string) => {
+    setIsLoading(true);
+    taskApplicationApi.rejectApplication(applicationId)
+      .then(() => {
+        showAlert("Từ chối", `Đã từ chối đơn ứng tuyển của ${name}`);
+        return taskApplicationApi.getApplications({ taskId: task._id || task.id } as any);
+      })
+      .then((res: any) => {
+        setIsLoading(false);
+        setApplications(res);
+      })
+      .catch((err: any) => {
+        setIsLoading(false);
+        showAlert("Thất bại", err.message || "Từ chối ứng cử viên thất bại.");
+      });
+  };
+
+  const handleAcceptApplicant = (applicationId: string, name: string) => {
+    if (isUnpaid) {
+      router.push({
+        pathname: "/(tabs)/checkout",
+        params: {
+          taskId: task._id || task.id,
+          applicationId: applicationId,
+          taskName: task.title,
+          budget: task.price?.toString(),
+          address: task.address,
+        }
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    taskApplicationApi.acceptApplication(applicationId)
+      .then(() => {
+        showAlert("Thành công", `Đã chấp nhận ${name} thực hiện công việc! Các ứng viên khác tự động bị từ chối.`);
+        return taskApi.getTaskById(task._id || task.id);
+      })
+      .then((res: any) => {
+        setTask(res);
+        return taskApplicationApi.getApplications({ taskId: task._id || task.id } as any);
+      })
+      .then((res: any) => {
+        setIsLoading(false);
+        setApplications(res);
+      })
+      .catch((err: any) => {
+        setIsLoading(false);
+        showAlert("Thất bại", err.message || "Duyệt ứng cử viên thất bại.");
+      });
+  };
+
+  const handleSubmitReview = () => {
+    if (!reviewComment.trim()) {
+      showAlert("Lỗi", "Vui lòng nhập bình luận đánh giá.");
+      return;
+    }
+    setIsLoading(true);
+    reviewApi.createReview({
+      taskId: task._id || task.id,
+      rating,
+      comment: reviewComment.trim()
+    })
+      .then(() => {
+        setIsLoading(false);
+        setReviewComment("");
+        showAlert("Cảm ơn", "Đã gửi đánh giá của bạn!");
+        return taskApi.getTaskById(task._id || task.id);
+      })
+      .then((res: any) => {
+        setTask(res);
+      })
+      .catch((err: any) => {
+        setIsLoading(false);
+        showAlert("Thất bại", err.message || "Gửi đánh giá thất bại.");
+      });
+  };
+
+  const showAlert = (title: string, msg: string) => {
+    if (Platform.OS === "web") {
+      alert(`${title}: ${msg}`);
+    } else {
+      Alert.alert(title, msg);
+    }
+  };
+
+  // Get category background accent
+  const getCatBg = () => {
+    const name = (task.categoryId?.name || task.category || "").toLowerCase();
+    if (name.includes("dọn") || name.includes("sạch")) return "bg-orange-500";
+    if (name.includes("chuyển") || name.includes("giao")) return "bg-blue-500";
+    if (name.includes("lắp") || name.includes("sửa")) return "bg-emerald-500";
+    if (name.includes("chợ") || name.includes("mua")) return "bg-pink-500";
+    return "bg-slate-500";
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        translucent
-        backgroundColor="transparent"
-      />
+    <SafeAreaView className="flex-1 bg-slate-50">
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       {/* Header Overlay Toolbar */}
-      <View style={styles.headerToolbar}>
+      <View
+        style={{
+          paddingTop: insets.top > 0 ? insets.top : 20,
+          height: (insets.top > 0 ? insets.top : 20) + 48,
+        }}
+        className="absolute top-0 left-0 right-0 px-4 flex-row justify-between items-center z-10 bg-black/40"
+      >
         <TouchableOpacity
-          style={styles.headerToolbarButton}
+          style={{ width: 36, height: 36 }}
+          className="rounded-full bg-black/30 items-center justify-center"
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color={Colors.white} />
+          <Ionicons name="arrow-back" size={22} color="white" />
         </TouchableOpacity>
-        <Text style={styles.headerToolbarTitle}>Chi tiết công việc</Text>
-        <TouchableOpacity style={styles.headerToolbarButton}>
-          <Ionicons name="share-outline" size={24} color={Colors.white} />
-        </TouchableOpacity>
+        <Text className="text-white font-bold text-base">Chi tiết công việc</Text>
+        <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-24">
+        
         {/* Cover Image Banner */}
-        <View style={styles.coverContainer}>
+        <View className="relative h-44 w-full bg-slate-300">
           <Image
             source={{
               uri: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&auto=format&fit=crop",
             }}
-            style={styles.coverImage}
+            className="w-full h-full object-cover"
           />
-          <View style={styles.coverGradient} />
-          <View style={styles.coverTagContainer}>
-            <Text style={styles.coverTagText}>DỌN DẸP NHÀ CỬA</Text>
+          <View className="absolute inset-0 bg-black/20" />
+          <View className={`absolute bottom-4 left-4 ${getCatBg()} px-3 py-1 rounded-full`}>
+            <Text className="color-white text-[11px] font-bold tracking-wide uppercase">
+              {(task.categoryId?.name || task.category || "Công việc").toUpperCase()}
+            </Text>
           </View>
         </View>
 
-        {/* Title Content Card */}
-        <View style={styles.card}>
-          <Text style={styles.jobTitle}>{activeTask.title}</Text>
-          <View style={styles.jobSubRow}>
-            <Ionicons name="time-outline" size={16} color={Colors.outline} />
-            <Text style={styles.jobTimeText}>{activeTask.postedAgo}</Text>
-            <Text style={styles.dot}>•</Text>
-            <Text style={styles.jobUrgentText}>Cần gấp</Text>
-          </View>
-
-          {/* Quick Stats Bento */}
-          <View style={styles.bentoRow}>
-            <View style={styles.bentoCell}>
-              <View style={styles.bentoCellHeader}>
-                <Ionicons
-                  name="cash-outline"
-                  size={16}
-                  color={Colors.onSurfaceVariant}
-                />
-                <Text style={styles.bentoCellLabel}>Ngân sách</Text>
-              </View>
-              <Text style={styles.bentoCellPrice}>{activeTask.price}</Text>
-            </View>
-
-            <View style={styles.bentoCell}>
-              <View style={styles.bentoCellHeader}>
-                <Ionicons
-                  name="timer-outline"
-                  size={16}
-                  color={Colors.onSurfaceVariant}
-                />
-                <Text style={styles.bentoCellLabel}>Thời lượng</Text>
-              </View>
-              <Text style={styles.bentoCellDuration}>{activeTask.duration}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Description Card */}
-        <View style={styles.card}>
-          <View style={styles.sectionHeader}>
-            <Ionicons
-              name="document-text-outline"
-              size={20}
-              color={Colors.primary}
-            />
-            <Text style={styles.sectionTitleText}>Mô tả công việc</Text>
-          </View>
-
-          <Text style={styles.descText}>{activeTask.description}</Text>
-
-          <Text style={styles.bulletsHeader}>Yêu cầu công việc:</Text>
-          <View style={styles.bulletItem}>
-            <Text style={styles.bulletSymbol}>•</Text>
-            <Text style={styles.bulletText}>
-              Quét và lau sàn toàn bộ căn hộ
-            </Text>
-          </View>
-          <View style={styles.bulletItem}>
-            <Text style={styles.bulletSymbol}>•</Text>
-            <Text style={styles.bulletText}>
-              Dọn dẹp rác, lau bụi kệ tủ, bàn ghế
-            </Text>
-          </View>
-          <View style={styles.bulletItem}>
-            <Text style={styles.bulletSymbol}>•</Text>
-            <Text style={styles.bulletText}>Chà rửa 2 nhà vệ sinh sạch sẽ</Text>
-          </View>
-          <View style={styles.bulletItem}>
-            <Text style={styles.bulletSymbol}>•</Text>
-            <Text style={styles.bulletText}>
-              Dụng cụ: Đã có sẵn chổi, cây lau nhà, nước lau sàn.
-            </Text>
-          </View>
-
-          {/* Tag List */}
-          <View style={styles.tagGrid}>
-            <View style={styles.tagBadge}>
-              <Text style={styles.tagText}>Kinh nghiệm &gt; 6 tháng</Text>
-            </View>
-            <View style={styles.tagBadge}>
-              <Text style={styles.tagText}>Đúng giờ</Text>
-            </View>
-            <View style={styles.tagBadge}>
-              <Text style={styles.tagText}>Cẩn thận</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Tasker Application List */}
-        <View style={styles.card}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: Colors.onSurface }}>Danh sách ứng tuyển (Tasker Application List)</Text>
-            <View style={{ backgroundColor: '#F0F3FF', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 }}>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.primary }}>{activeTask.applicants.length} Ứng viên</Text>
-            </View>
-          </View>
-
-          {activeTask.status === 'OPEN' && activeTask.applicants.length === 0 && (
-            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-              <Ionicons name="people-outline" size={32} color={Colors.outline} />
-              <Text style={{ fontSize: 13, color: Colors.onSurfaceVariant, marginTop: 8 }}>Chưa có Tasker nào ứng tuyển vào bài đăng này.</Text>
-            </View>
-          )}
-
-          {activeTask.status === 'OPEN' && activeTask.applicants.map((applicantName) => (
-            <View key={applicantName} style={{ backgroundColor: '#F9FAFB', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 10 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Image source={{ uri: 'https://api.dicebear.com/7.x/avataaars/png?seed=' + applicantName }} style={{ width: 36, height: 36, borderRadius: 18 }} />
-                  <View style={{ flex: 1, marginLeft: 8 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#111827' }}>{applicantName}</Text>
-                    <Text style={{ fontSize: 11, color: '#6B7280' }}>★ 4.9 • Sinh viên Bách Khoa (KYC Verified)</Text>
-                  </View>
-                </View>
-                <Text style={{ fontSize: 16, fontWeight: '800', color: '#2563EB' }}>{activeTask.price}</Text>
-              </View>
-              <Text style={{ fontSize: 12, color: '#4B5563', marginTop: 8, fontStyle: 'italic' }}>
-                &quot;Tôi sẵn sàng nhận công việc dọn dẹp này và cam kết hoàn thành đúng giờ, sạch sẽ 100%.&quot;
+        {/* Task Status Banner */}
+        <View className="mx-4 -mt-4 bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex-row justify-between items-center">
+          <View>
+            <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Trạng thái công việc</Text>
+            <View className="flex-row items-center mt-1 space-x-2">
+              <View className={`w-2.5 h-2.5 rounded-full ${
+                task.status === "completed"
+                  ? "bg-green-500"
+                  : task.status === "in_progress"
+                  ? "bg-blue-500"
+                  : task.status === "assigned"
+                  ? "bg-indigo-500"
+                  : task.status === "cancelled"
+                  ? "bg-slate-400"
+                  : "bg-orange-500"
+              }`} />
+              <Text className="text-sm font-bold text-slate-800">
+                {task.status === "completed"
+                  ? "Đã hoàn thành"
+                  : task.status === "in_progress"
+                  ? "Đang thực hiện"
+                  : task.status === "assigned"
+                  ? "Đã chấp nhận Tasker"
+                  : task.status === "cancelled"
+                  ? "Đã hủy bỏ"
+                  : "Đang tìm kiếm (OPEN)"}
               </Text>
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    acceptTasker(activeTask.id, applicantName);
-                    Alert.alert("Thành công", `Đã duyệt ứng viên ${applicantName} thực hiện công việc!`);
-                    router.push("/(tabs)/tracking");
-                  }}
-                  style={{ flex: 1, backgroundColor: '#16A34A', paddingVertical: 10, borderRadius: 8, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
-                >
-                  <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" />
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFFFFF' }}>Duyệt (Accept Tasker)</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={{ backgroundColor: '#F3F4F6', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#6B7280' }}>Từ chối</Text>
-                </TouchableOpacity>
-              </View>
             </View>
-          ))}
+          </View>
 
-          {(activeTask.status === 'ACCEPTED' || activeTask.status === 'IN_PROGRESS' || activeTask.status === 'COMPLETED') && (
-            <View style={{ backgroundColor: '#F0FDF4', borderColor: '#BBF7D0', borderWidth: 1, borderRadius: 12, padding: 14 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Image source={{ uri: 'https://api.dicebear.com/7.x/avataaars/png?seed=' + activeTask.assignedTasker }} style={{ width: 36, height: 36, borderRadius: 18 }} />
-                <View style={{ flex: 1, marginLeft: 8 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#15803D' }}>Đã giao cho: {activeTask.assignedTasker}</Text>
-                  <Text style={{ fontSize: 11, color: '#166534', marginTop: 1 }}>
-                    Trạng thái công việc: {activeTask.status === 'ACCEPTED' ? 'Chờ bắt đầu' : activeTask.status === 'IN_PROGRESS' ? 'Đang thực hiện' : 'Đã hoàn thành'}
-                  </Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                onPress={() => router.push("/(tabs)/tracking")}
-                style={{ backgroundColor: Colors.primary, paddingVertical: 10, borderRadius: 8, alignItems: 'center', marginTop: 12 }}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>Đi đến trang Theo dõi (Tracking)</Text>
+          <View className="items-end">
+            <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ký quỹ (Escrow)</Text>
+            <View className={`mt-1 px-2.5 py-0.5 rounded-md ${
+              isReleased
+                ? "bg-emerald-50 text-emerald-700"
+                : isEscrowed
+                ? "bg-blue-50 text-blue-700"
+                : "bg-red-50 text-red-700"
+            }`}>
+              <Text className="text-xs font-bold">
+                {isReleased ? "Đã giải ngân" : isEscrowed ? "Đang tạm giữ" : "Chưa thanh toán"}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Edit Form or Display Card */}
+        {isEditing ? (
+          <View className="bg-white rounded-2xl p-5 mx-4 mt-4 shadow-sm border border-slate-100">
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-sm font-bold text-orange-600 uppercase tracking-wider">
+                Chỉnh sửa công việc
+              </Text>
+              <TouchableOpacity onPress={() => setIsEditing(false)}>
+                <Text className="text-xs font-bold text-slate-400">Hủy</Text>
               </TouchableOpacity>
             </View>
+
+            <View className="mb-3">
+              <Text className="text-xs font-bold text-slate-600 mb-1">Tên công việc</Text>
+              <TextInput
+                value={editTitle}
+                onChangeText={setEditTitle}
+                className="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 bg-slate-50/50"
+              />
+            </View>
+
+            <View className="mb-3">
+              <Text className="text-xs font-bold text-slate-600 mb-1">Mô tả công việc</Text>
+              <TextInput
+                value={editDesc}
+                onChangeText={setEditDesc}
+                multiline
+                numberOfLines={3}
+                style={{ textAlignVertical: "top" }}
+                className="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 bg-slate-50/50 h-16"
+              />
+            </View>
+
+            <View className="mb-3">
+              <Text className="text-xs font-bold text-slate-600 mb-1">Địa chỉ thực hiện</Text>
+              <TextInput
+                value={editAddress}
+                onChangeText={setEditAddress}
+                className="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 bg-slate-50/50"
+              />
+            </View>
+
+            <View className="mb-3">
+              <Text className="text-xs font-bold text-slate-600 mb-1">Ngân sách (VND)</Text>
+              <TextInput
+                value={editPrice}
+                onChangeText={setEditPrice}
+                keyboardType="numeric"
+                className="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 font-bold bg-slate-50/50"
+              />
+            </View>
+
+            <View className="flex-row justify-between mb-4">
+              <View className="w-[47%]">
+                <Text className="text-[10px] font-bold text-slate-500 uppercase mb-1">Vĩ độ (Lat)</Text>
+                <TextInput
+                  value={editLat}
+                  onChangeText={setEditLat}
+                  keyboardType="numeric"
+                  className="border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700 bg-slate-50/50"
+                />
+              </View>
+              <View className="w-[47%]">
+                <Text className="text-[10px] font-bold text-slate-500 uppercase mb-1">Kinh độ (Lng)</Text>
+                <TextInput
+                  value={editLng}
+                  onChangeText={setEditLng}
+                  keyboardType="numeric"
+                  className="border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700 bg-slate-50/50"
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={handleSaveEdit}
+              className="bg-orange-500 py-3 rounded-xl items-center"
+            >
+              <Text className="text-white font-bold text-sm">Lưu thay đổi</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View className="bg-white rounded-2xl p-5 mx-4 mt-4 shadow-sm border border-slate-100">
+            <View className="flex-row justify-between items-start mb-2">
+              <Text className="text-xl font-bold text-slate-800 flex-1 leading-snug mr-3">{task.title}</Text>
+              {isClient && task.status === "open" && isUnpaid && (
+                <TouchableOpacity
+                  onPress={() => setIsEditing(true)}
+                  className="flex-row items-center border border-orange-200 bg-orange-50 px-2 py-1 rounded-lg"
+                >
+                  <Ionicons name="create-outline" size={14} color="#EA580C" />
+                  <Text className="text-[10px] font-bold text-orange-600 ml-1">Sửa</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View className="flex-row items-center space-x-1.5 mb-4">
+              <Ionicons name="time-outline" size={14} color="#94A3B8" />
+              <Text className="text-xs text-slate-400">{task.postedAgo || "Vừa xong"}</Text>
+              <Text className="text-slate-300">•</Text>
+              <Text className="text-xs font-bold text-orange-600">Đăng bởi: {task.customerId?.fullName || task.customer || "Khách hàng"}</Text>
+            </View>
+
+            {/* Bento Quick Info Details */}
+            <View className="flex-row justify-between">
+              <View className="w-[48%] bg-slate-50 border border-slate-100 rounded-xl p-3">
+                <View className="flex-row items-center space-x-1 mb-1">
+                  <Ionicons name="cash-outline" size={14} color="#EA580C" />
+                  <Text className="text-[10px] font-medium text-slate-400">Ngân sách</Text>
+                </View>
+                <Text className="text-lg font-extrabold text-orange-600">
+                  {typeof task.price === 'number' ? task.price.toLocaleString("vi-VN") + "đ" : task.price}
+                </Text>
+              </View>
+
+              <View className="w-[48%] bg-slate-50 border border-slate-100 rounded-xl p-3">
+                <View className="flex-row items-center space-x-1 mb-1">
+                  <Ionicons name="timer-outline" size={14} color="#94A3B8" />
+                  <Text className="text-[10px] font-medium text-slate-400">Thời lượng</Text>
+                </View>
+                <Text className="text-lg font-bold text-slate-700">{task.duration || "3 giờ"}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Description Card */}
+        <View className="bg-white rounded-2xl p-5 mx-4 mt-4 shadow-sm border border-slate-100">
+          <View className="flex-row items-center space-x-2 mb-3">
+            <Ionicons name="document-text-outline" size={18} color="#EA580C" />
+            <Text className="text-sm font-bold text-slate-800">Mô tả công việc</Text>
+          </View>
+          <Text className="text-sm text-slate-600 leading-relaxed mb-4">
+            {task.description || "Chưa có mô tả chi tiết."}
+          </Text>
+
+          <View className="border-t border-slate-100 pt-3">
+            <View className="flex-row items-center space-x-2 mb-2">
+              <Ionicons name="location-outline" size={16} color="#EA580C" />
+              <Text className="text-xs font-bold text-slate-700">Địa chỉ thực hiện</Text>
+            </View>
+            <Text className="text-xs text-slate-600 leading-relaxed mb-3">{task.address}</Text>
+
+            {task.location?.coordinates && (
+              <View className="bg-slate-50 border border-slate-150 rounded-xl p-3 flex-row justify-between items-center">
+                <View className="flex-row items-center">
+                  <Ionicons name="locate-outline" size={16} color="#475569" />
+                  <Text className="text-[11px] font-semibold text-slate-700 ml-1.5">Tọa độ GPS:</Text>
+                </View>
+                <Text className="text-[11px] font-mono font-bold text-slate-800">
+                  [{task.location.coordinates[0]}, {task.location.coordinates[1]}]
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Payments Control Section (For client user) */}
+        {isClient && (
+          <View className="bg-white rounded-2xl p-5 mx-4 mt-4 shadow-sm border border-slate-100">
+            <Text className="text-sm font-bold text-slate-800 mb-3">Quản lý thanh toán</Text>
+
+            {/* Unpaid payment selection simulator */}
+            {isUnpaid && (
+              <View>
+                <Text className="text-xs text-slate-500 leading-relaxed mb-4">
+                  Công việc này chưa được thanh toán ký quỹ. Vui lòng thanh toán ký quỹ để các Tasker có thể được duyệt làm việc.
+                </Text>
+                <View className="flex-row space-x-3 justify-between">
+                  <TouchableOpacity
+                    disabled={isLoading}
+                    onPress={() => handlePayEscrow("MoMo")}
+                    className="flex-1 bg-pink-600 py-3.5 rounded-xl flex-row items-center justify-center space-x-1.5 shadow-sm shadow-pink-600/10"
+                    style={isLoading ? { opacity: 0.5 } : null}
+                  >
+                    <Ionicons name="wallet-outline" size={16} color="white" />
+                    <Text className="text-white font-bold text-xs">Simulate MoMo</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    disabled={isLoading}
+                    onPress={() => handlePayEscrow("VNPAY")}
+                    className="flex-1 bg-blue-600 py-3.5 rounded-xl flex-row items-center justify-center space-x-1.5 shadow-sm shadow-blue-600/10"
+                    style={isLoading ? { opacity: 0.5 } : null}
+                  >
+                    <Ionicons name="qr-code-outline" size={16} color="white" />
+                    <Text className="text-white font-bold text-xs">Simulate VNPay</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {/* Escrowed tasker release / refund */}
+            {isEscrowed && (
+              <View>
+                <Text className="text-xs text-slate-500 leading-relaxed mb-4">
+                  Số tiền ký quỹ {task.price} đang được hệ thống tạm khóa an toàn. Bạn có thể giải ngân thủ công cho Tasker hoặc yêu cầu hoàn tiền nếu giao dịch bị hủy.
+                </Text>
+                
+                <View className="flex-row justify-between space-x-3 mb-3">
+                  <TouchableOpacity
+                    disabled={isLoading}
+                    onPress={handleReleasePayment}
+                    className="flex-1 bg-emerald-600 py-3 rounded-xl flex-row items-center justify-center space-x-1.5"
+                    style={isLoading ? { opacity: 0.5 } : null}
+                  >
+                    <Ionicons name="checkmark-circle-outline" size={15} color="white" />
+                    <Text className="text-white font-bold text-xs">Giải ngân (Release)</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    disabled={isLoading}
+                    onPress={handleRefund}
+                    className="flex-1 bg-red-500 py-3 rounded-xl flex-row items-center justify-center space-x-1.5"
+                    style={isLoading ? { opacity: 0.5 } : null}
+                  >
+                    <Ionicons name="close-circle-outline" size={15} color="white" />
+                    <Text className="text-white font-bold text-xs">Hoàn tiền (Refund)</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {/* Released state status */}
+            {isReleased && (
+              <View className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex-row items-center space-x-2.5">
+                <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                <View className="flex-1">
+                  <Text className="text-xs font-bold text-emerald-800">Đã hoàn tất thanh toán</Text>
+                  <Text className="text-[10px] text-emerald-600 mt-0.5">Tiền ký quỹ đã được giải ngân chuyển vào ví của Tasker.</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Cancel task only when unpaid and status is open or assigned */}
+            {isUnpaid && (task.status === "open" || task.status === "assigned") && (
+              <TouchableOpacity
+                disabled={isLoading}
+                onPress={handleCancelTask}
+                className="mt-3 w-full border border-red-500 bg-red-50 py-3 rounded-xl flex-row items-center justify-center space-x-1.5"
+                style={isLoading ? { opacity: 0.5 } : null}
+              >
+                <Ionicons name="trash-outline" size={16} color="#DC2626" />
+                <Text className="text-red-700 font-bold text-xs">Hủy bỏ Task (Delete)</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* Applications / Candidate List */}
+        <View className="bg-white rounded-2xl p-5 mx-4 mt-4 shadow-sm border border-slate-100">
+          <View className="flex-row items-center justify-between mb-4">
+            <Text className="text-sm font-bold text-slate-800">Ứng cử viên ({applications?.length || 0})</Text>
+            {isUnpaid && isClient && (
+              <View className="bg-orange-50 px-2 py-0.5 rounded-lg border border-orange-100">
+                <Text className="text-[9px] font-bold text-orange-600">Yêu cầu ký quỹ</Text>
+              </View>
+            )}
+          </View>
+
+          {(!applications || applications.length === 0) && (
+            <View className="items-center py-6">
+              <Ionicons name="people-outline" size={32} color="#94A3B8" />
+              <Text className="text-xs text-slate-400 mt-2">Chưa có ứng cử viên nào nộp đơn.</Text>
+            </View>
+          )}
+
+          {applications && applications.length > 0 && (
+            <View>
+              {applications.map((app) => {
+                const tasker = app.taskerId || {};
+                const name = tasker.fullName || "Người làm";
+                const isAssigned = task.taskerId?._id === tasker._id || task.taskerId === tasker._id;
+                const formattedPrice = typeof task.price === 'number' ? task.price.toLocaleString("vi-VN") + "đ" : task.price;
+                return (
+                  <View
+                    key={app._id}
+                    className={`bg-slate-50 border ${
+                      isAssigned ? "border-emerald-500 bg-emerald-50/20" : "border-slate-200"
+                    } rounded-xl p-3.5 mb-3`}
+                  >
+                    <View className="flex-row items-center justify-between">
+                      <TouchableOpacity
+                        onPress={() => setSelectedTaskerProfile(tasker)}
+                        className="flex-row items-center space-x-2.5"
+                      >
+                        <Image
+                          source={{ uri: tasker.avatarUrl || `https://api.dicebear.com/7.x/avataaars/png?seed=${name}` }}
+                          className="w-9 h-9 rounded-full bg-slate-200"
+                        />
+                        <View>
+                          <Text className="text-xs font-bold text-slate-800">
+                            {name} <Text className="text-[10px] text-orange-500 font-semibold">(Xem hồ sơ)</Text>
+                          </Text>
+                          <Text className="text-[10px] text-slate-400 mt-0.5">★ 4.9 • Tasker Chuyên Nghiệp</Text>
+                        </View>
+                      </TouchableOpacity>
+                      {isAssigned ? (
+                        <View className="bg-emerald-100 px-2 py-0.5 rounded-md">
+                          <Text className="text-[9px] font-bold text-emerald-700">Đã chọn</Text>
+                        </View>
+                      ) : (
+                        <Text className="text-xs font-bold text-slate-700">{formattedPrice}</Text>
+                      )}
+                    </View>
+
+                    {/* Action buttons for Client */}
+                    {isClient && task.status === "open" && (
+                      <View className="flex-row space-x-2 mt-3.5 border-t border-slate-100 pt-2.5">
+                        <TouchableOpacity
+                          disabled={isLoading}
+                          onPress={() => handleAcceptApplicant(app._id, name)}
+                          className="flex-1 bg-orange-500 py-2 rounded-lg items-center flex-row justify-center space-x-1"
+                          style={isLoading ? { opacity: 0.5 } : null}
+                        >
+                          <Ionicons name="checkmark-circle-outline" size={13} color="white" />
+                          <Text className="text-white font-bold text-[11px]">Duyệt làm việc</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          disabled={isLoading}
+                          onPress={() => handleRejectApplicant(app._id, name)}
+                          className="bg-slate-200 px-3 py-2 rounded-lg items-center justify-center"
+                          style={isLoading ? { opacity: 0.5 } : null}
+                        >
+                          <Text className="text-slate-600 font-bold text-[11px]">Từ chối</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          {/* If status is assigned, display waiting for tasker start working indicator */}
+          {isClient && task.status === "assigned" && (
+            <View className="mt-4 w-full bg-slate-50 border border-slate-200 p-4 rounded-xl flex-row items-center justify-center space-x-2">
+              <Ionicons name="hourglass-outline" size={18} color="#4F46E5" />
+              <Text className="text-slate-600 font-bold text-xs">Đang chờ Tasker bắt đầu thực hiện...</Text>
+            </View>
+          )}
+
+          {/* Display completion proof image from tasker if present */}
+          {task.completedImage ? (
+            <View className="mt-4 bg-amber-50 border border-amber-200 p-4 rounded-2xl">
+              <Text className="text-sm font-extrabold text-amber-800 mb-2">📸 Hình ảnh nghiệm thu từ Tasker:</Text>
+              <View style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 12, overflow: 'hidden', backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' }}>
+                <Image
+                  source={{ uri: task.completedImage }}
+                  style={{ width: '100%', height: '100%' }}
+                  resizeMode="cover"
+                />
+              </View>
+              <Text className="text-[11px] text-amber-700 mt-2">
+                * Vui lòng kiểm tra kỹ hình ảnh hoàn thành thực tế trước khi bấm &quot;Xác nhận Hoàn thành công việc&quot;.
+              </Text>
+            </View>
+          ) : (
+            isClient && task.status === "in_progress" && (
+              <View className="mt-4 bg-slate-50 border border-slate-200 p-4 rounded-xl flex-row items-center justify-center space-x-2">
+                <Ionicons name="images-outline" size={18} color="#EA580C" />
+                <Text className="text-slate-600 font-bold text-xs">Đang chờ Tasker gửi ảnh nghiệm thu...</Text>
+              </View>
+            )
+          )}
+
+          {/* If status is in_progress, allow clients to complete the task */}
+          {isClient && task.status === "in_progress" && (
+            <TouchableOpacity
+              disabled={isLoading}
+              onPress={handleConfirmComplete}
+              className="mt-4 w-full bg-emerald-600 py-3.5 rounded-xl flex-row items-center justify-center space-x-1.5 shadow-md shadow-emerald-600/10"
+              style={isLoading ? { opacity: 0.5 } : null}
+            >
+              <Ionicons name="checkmark-done-circle-outline" size={18} color="white" />
+              <Text className="text-white font-extrabold text-xs">Xác nhận Hoàn thành công việc</Text>
+            </TouchableOpacity>
           )}
         </View>
 
-        {/* Customer Profile Card */}
-        <View style={styles.card}>
-          <Text style={styles.customerCardTitle}>Người đăng</Text>
+        {/* Confirm & Review Submission Box */}
+        {(task.status === "completed" || task.status === "COMPLETED") && (
+          <View className="bg-white rounded-2xl p-5 mx-4 mt-4 shadow-sm border border-slate-100">
+            <Text className="text-sm font-bold text-slate-800 mb-3">Đánh giá dịch vụ</Text>
 
-          <View style={styles.customerRow}>
-            <Image
-              source={{ uri: activeTask.avatarUrl || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop" }}
-              style={styles.customerAvatar}
-            />
-            <View style={styles.customerInfo}>
-              <Text style={styles.customerName}>{activeTask.customer}</Text>
-              <View style={styles.customerRatingRow}>
-                <Ionicons name="star" size={14} color={Colors.star} />
-                <Text style={styles.customerRating}>{activeTask.customerRating}</Text>
-                <Text style={styles.customerReviews}>(24 đánh giá)</Text>
+            {task.review ? (
+              <View className="bg-slate-50 border border-slate-150 rounded-xl p-3.5">
+                <View className="flex-row items-center justify-between mb-2">
+                  <Text className="text-xs font-bold text-slate-700">Đánh giá của bạn:</Text>
+                  <View className="flex-row space-x-0.5">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Ionicons
+                        key={s}
+                        name={s <= (task.review?.rating || 0) ? "star" : "star-outline"}
+                        size={14}
+                        color="#F59E0B"
+                      />
+                    ))}
+                  </View>
+                </View>
+                <Text className="text-xs text-slate-600 italic">&quot;{task.review.comment}&quot;</Text>
+              </View>
+            ) : isClient ? (
+              <View>
+                <Text className="text-xs text-slate-500 leading-normal mb-3">
+                  Hãy chấm sao và bình luận về độ hài lòng đối với Tasker sau khi hoàn thành.
+                </Text>
+                
+                {/* Visual stars selector */}
+                <View className="flex-row justify-center space-x-2.5 mb-4">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <TouchableOpacity key={star} onPress={() => setRating(star)}>
+                      <Ionicons
+                        name={star <= rating ? "star" : "star-outline"}
+                        size={28}
+                        color="#F59E0B"
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Comment box */}
+                <View className="border border-slate-200 rounded-xl p-2.5 mb-3 bg-slate-50/50">
+                  <TextInput
+                    value={reviewComment}
+                    onChangeText={setReviewComment}
+                    placeholder="Viết cảm nhận của bạn về chất lượng phục vụ..."
+                    placeholderTextColor="#94A3B8"
+                    multiline
+                    numberOfLines={3}
+                    style={{ textAlignVertical: "top" }}
+                    className="text-xs text-slate-700 h-16 text-start"
+                  />
+                </View>
+
+                <TouchableOpacity
+                  onPress={handleSubmitReview}
+                  className="bg-orange-500 py-3 rounded-xl items-center shadow-md shadow-orange-500/10"
+                >
+                  <Text className="text-white font-bold text-xs">Gửi đánh giá</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View className="bg-slate-50 border border-slate-150 rounded-xl p-3.5 items-center">
+                <Text className="text-xs text-slate-500">Chờ khách hàng gửi đánh giá cho bạn.</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Customer Info details card */}
+        <View className="bg-white rounded-2xl p-5 mx-4 mt-4 shadow-sm border border-slate-100">
+          <Text className="text-sm font-bold text-slate-800 mb-3.5">Thông tin khách hàng</Text>
+          
+          <View className="flex-row items-center justify-between mb-4">
+            <View className="flex-row items-center space-x-3">
+              <Image
+                source={{
+                  uri: task.customerId?.avatarUrl || task.avatarUrl || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop",
+                }}
+                className="w-11 h-11 rounded-full bg-slate-200"
+              />
+              <View>
+                <Text className="text-xs font-bold text-slate-800">{task.customerId?.fullName || task.customer || "Khách hàng"}</Text>
+                <View className="flex-row items-center space-x-1 mt-0.5">
+                  <Ionicons name="star" size={11} color="#F59E0B" />
+                  <Text className="text-[10px] font-bold text-slate-600">{task.customerRating || "4.9"}</Text>
+                  <Text className="text-[10px] text-slate-400">(24 reviews)</Text>
+                </View>
               </View>
             </View>
-            <TouchableOpacity style={styles.chatButton}>
-              <Ionicons
-                name="chatbubble-ellipses-outline"
-                size={20}
-                color={Colors.primary}
-              />
+
+            <TouchableOpacity className="w-8 h-8 rounded-full border border-slate-200 items-center justify-center bg-slate-50">
+              <Ionicons name="chatbubble-ellipses-outline" size={16} color="#EA580C" />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.divider} />
-
-          {/* Location Area with Map Snippet */}
-          <View style={styles.locationHeaderRow}>
-            <Ionicons
-              name="location-outline"
-              size={16}
-              color={Colors.onSurfaceVariant}
-            />
-            <Text style={styles.locationHeaderLabel}>Khu vực</Text>
-          </View>
-          <Text style={styles.locationVal}>Quận 7, TP. Hồ Chí Minh</Text>
-
-          {/* Map Image Snippet */}
-          <View style={styles.mapContainer}>
-            <Image
-              source={{
-                uri: "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=400&auto=format&fit=crop",
-              }}
-              style={styles.mapImage}
-            />
-            <View style={styles.mapMarkerPulseOuter}>
-              <View style={styles.mapMarkerPulseInner} />
+          {/* Fake map representation for GPS visual */}
+          <View className="border-t border-slate-100 pt-3.5">
+            <Text className="text-xs font-bold text-slate-700 mb-2">Bản đồ vị trí</Text>
+            <View className="relative h-28 w-full rounded-xl overflow-hidden bg-slate-100">
+              <Image
+                source={{
+                  uri: "https://images.unsplash.com/photo-1524661135-423995f22d0b?w=400&auto=format&fit=crop",
+                }}
+                className="w-full h-full opacity-60"
+              />
+              <View className="absolute top-[40%] left-[45%] w-8 h-8 rounded-full bg-orange-500/25 items-center justify-center">
+                <View className="w-3 h-3 rounded-full bg-orange-600 border border-white" />
+              </View>
             </View>
           </View>
         </View>
 
-        {/* Padding for fixed bottom button */}
-        <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Floating Sticky Bottom button */}
-      {getAuthSession()?.role !== 'client' && (
-        <View style={styles.stickyFooter}>
+      {/* Floating Apply button for non-client (Tasker) users */}
+      {!isClient && task.status === "OPEN" && (
+        <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-150 p-4">
           <TouchableOpacity
-            style={styles.applyButton}
-            activeOpacity={0.8}
-            onPress={handleApply}
+            onPress={() => {
+              // Simulated apply flow
+              showAlert("Đơn ứng tuyển", "Ứng tuyển thành công! Vui lòng chờ khách hàng phê duyệt.");
+            }}
+            className="w-full bg-orange-500 py-3.5 rounded-xl items-center shadow-md shadow-orange-500/10"
           >
-            <Text style={styles.applyButtonText}>Ứng tuyển ngay</Text>
+            <Text className="text-white font-bold text-sm">Gửi hồ sơ ứng tuyển</Text>
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Modal Xem thông tin Tasker */}
+      <Modal visible={!!selectedTaskerProfile} animationType="slide" transparent>
+        <View className="flex-1 bg-black/60 justify-end">
+          <View className="bg-white rounded-t-3xl p-6 max-h-[80%]">
+            <View className="flex-row justify-between items-center border-b border-slate-100 pb-3 mb-4">
+              <Text className="text-base font-bold text-slate-800">Thông tin chi tiết Tasker</Text>
+              <TouchableOpacity onPress={() => setSelectedTaskerProfile(null)} className="p-1 bg-slate-100 rounded-full">
+                <Ionicons name="close" size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            {selectedTaskerProfile && (
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-6">
+                <View className="items-center mb-5">
+                  <Image
+                    source={{ uri: selectedTaskerProfile.avatarUrl || `https://api.dicebear.com/7.x/avataaars/png?seed=${selectedTaskerProfile.fullName}` }}
+                    className="w-20 h-20 rounded-full bg-slate-200 mb-3"
+                  />
+                  <Text className="text-lg font-bold text-slate-800 text-center">{selectedTaskerProfile.fullName || "Người làm"}</Text>
+                  <Text className="text-xs text-orange-600 font-semibold mt-1">★ 4.9 • Đối tác Taskly</Text>
+                </View>
+
+                <View className="space-y-4">
+                  <View className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                    <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 font-bold">Giới thiệu (Bio)</Text>
+                    <Text className="text-xs text-slate-700 leading-normal">{selectedTaskerProfile.taskerProfile?.bio || "Chưa cung cấp giới thiệu."}</Text>
+                  </View>
+
+                  <View className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 mt-3">
+                    <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 font-bold">Thông tin liên hệ</Text>
+                    <Text className="text-xs text-slate-700 mt-1">📧 Email: {selectedTaskerProfile.email || "Đang ẩn"}</Text>
+                    <Text className="text-xs text-slate-700 mt-1">📞 Số điện thoại: {selectedTaskerProfile.phone || selectedTaskerProfile.phoneNumber || "Đang ẩn"}</Text>
+                  </View>
+
+                  <View className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 mt-3">
+                    <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 font-bold">Kỹ năng chuyên môn</Text>
+                    {selectedTaskerProfile.taskerProfile?.skills && selectedTaskerProfile.taskerProfile.skills.length > 0 ? (
+                      <View className="flex-row flex-wrap gap-1.5 mt-1">
+                        {selectedTaskerProfile.taskerProfile.skills.map((skill: string) => (
+                          <View key={skill} className="bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-md">
+                            <Text className="text-[10px] font-bold text-orange-600">{skill}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : (
+                      <Text className="text-xs text-slate-400">Chưa cập nhật kỹ năng.</Text>
+                    )}
+                  </View>
+
+                  <View className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 mt-3">
+                    <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 font-bold">Kinh nghiệm</Text>
+                    <Text className="text-xs text-slate-700 leading-normal">{selectedTaskerProfile.taskerProfile?.experience || "Chưa cập nhật kinh nghiệm."}</Text>
+                  </View>
+
+                  {selectedTaskerProfile.taskerProfile?.hourlyRate > 0 && (
+                    <View className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 mt-3">
+                      <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 font-bold">Mức lương mong muốn</Text>
+                      <Text className="text-sm font-bold text-slate-800">{selectedTaskerProfile.taskerProfile.hourlyRate.toLocaleString("vi-VN")} VNĐ/giờ</Text>
+                    </View>
+                  )}
+                </View>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  headerToolbar: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 80,
-    paddingTop: 30,
-    paddingHorizontal: Layout.spacing.md,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    zIndex: 10,
-    backgroundColor: "rgba(0,0,0,0.3)",
-  },
-  headerToolbarButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.3)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerToolbarTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: Colors.white,
-  },
-  scrollContent: {
-    paddingBottom: 100,
-  },
-  coverContainer: {
-    height: 240,
-    width: "100%",
-    position: "relative",
-  },
-  coverImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
-  coverGradient: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0,0,0,0.15)",
-  },
-  coverTagContainer: {
-    position: "absolute",
-    bottom: 16,
-    left: 16,
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: Layout.borderRadius.full,
-  },
-  coverTagText: {
-    color: Colors.white,
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-  },
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: Layout.borderRadius.md,
-    padding: Layout.spacing.md,
-    marginHorizontal: Layout.spacing.md,
-    marginTop: Layout.spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.outlineVariant + "33",
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  jobTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: Colors.onSurface,
-    lineHeight: 28,
-    marginBottom: Layout.spacing.xs,
-  },
-  jobSubRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Layout.spacing.lg,
-  },
-  jobTimeText: {
-    fontSize: 13,
-    color: Colors.onSurfaceVariant,
-    marginLeft: 4,
-  },
-  dot: {
-    fontSize: 14,
-    color: Colors.outline,
-    marginHorizontal: 8,
-  },
-  jobUrgentText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: Colors.primary,
-  },
-  bentoRow: {
-    flexDirection: "row",
-    gap: Layout.spacing.md,
-  },
-  bentoCell: {
-    flex: 1,
-    backgroundColor: Colors.surfaceContainerLow,
-    borderRadius: Layout.borderRadius.default,
-    padding: Layout.spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.outlineVariant + "15",
-  },
-  bentoCellHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginBottom: 4,
-  },
-  bentoCellLabel: {
-    fontSize: 11,
-    color: Colors.onSurfaceVariant,
-    fontWeight: "500",
-  },
-  bentoCellPrice: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: Colors.primary,
-  },
-  bentoCellDuration: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: Colors.onSurface,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Layout.spacing.sm,
-    marginBottom: Layout.spacing.md,
-  },
-  sectionTitleText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: Colors.onSurface,
-  },
-  descText: {
-    fontSize: 14,
-    color: Colors.onSurfaceVariant,
-    lineHeight: 22,
-    marginBottom: Layout.spacing.md,
-  },
-  bulletsHeader: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.onSurface,
-    marginBottom: 8,
-  },
-  bulletItem: {
-    flexDirection: "row",
-    marginBottom: Layout.spacing.xs,
-    paddingRight: 8,
-  },
-  bulletSymbol: {
-    fontSize: 14,
-    color: Colors.primary,
-    fontWeight: "700",
-    width: 14,
-  },
-  bulletText: {
-    fontSize: 14,
-    color: Colors.onSurfaceVariant,
-    lineHeight: 20,
-    flex: 1,
-  },
-  tagGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: Layout.spacing.lg,
-  },
-  tagBadge: {
-    backgroundColor: Colors.surfaceContainer,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Layout.borderRadius.full,
-  },
-  tagText: {
-    fontSize: 12,
-    color: Colors.onSurface,
-    fontWeight: "500",
-  },
-  customerCardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: Colors.onSurface,
-    marginBottom: Layout.spacing.md,
-  },
-  customerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Layout.spacing.md,
-  },
-  customerAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: Layout.spacing.md,
-  },
-  customerInfo: {
-    flex: 1,
-  },
-  customerName: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: Colors.onSurface,
-    marginBottom: 2,
-  },
-  customerRatingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  customerRating: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: Colors.primary,
-  },
-  customerReviews: {
-    fontSize: 12,
-    color: Colors.onSurfaceVariant,
-  },
-  chatButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.outlineVariant,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.outlineVariant + "33",
-    marginVertical: Layout.spacing.md,
-  },
-  locationHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginBottom: 4,
-  },
-  locationHeaderLabel: {
-    fontSize: 12,
-    color: Colors.onSurfaceVariant,
-    fontWeight: "500",
-  },
-  locationVal: {
-    fontSize: 14,
-    color: Colors.onSurface,
-    marginBottom: Layout.spacing.md,
-  },
-  mapContainer: {
-    height: 120,
-    width: "100%",
-    borderRadius: Layout.borderRadius.default,
-    overflow: "hidden",
-    position: "relative",
-    backgroundColor: Colors.surfaceContainerHigh,
-  },
-  mapImage: {
-    width: "100%",
-    height: "100%",
-    opacity: 0.7,
-  },
-  mapMarkerPulseOuter: {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: [{ translateX: -16 }, { translateY: -16 }],
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.primary + "33",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  mapMarkerPulseInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: Colors.primary,
-    borderWidth: 2,
-    borderColor: Colors.white,
-  },
-  bottomSpacer: {
-    height: 30,
-  },
-  stickyFooter: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.surface,
-    padding: Layout.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: Colors.outlineVariant + "33",
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  applyButton: {
-    backgroundColor: Colors.primary,
-    height: 48,
-    borderRadius: Layout.borderRadius.default,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  applyButtonText: {
-    color: Colors.white,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-});
