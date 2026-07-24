@@ -1,6 +1,7 @@
 import { MessageCircle, Phone, Plus, Star, Play, CheckCircle2 } from 'lucide-react-native';
-import { ScrollView, Text, TouchableOpacity, View, Alert } from 'react-native';
 import { useState, useEffect } from 'react';
+import { ScrollView, Text, TouchableOpacity, View, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getTasks, subscribe, startWork, Task } from '../../../session';
 import { GradientButton, TaskerCard, TaskerHeader, TaskerPill } from '../../taskerHomeLayout/components/TaskerPrimitives';
 import { TASKER_COLORS } from '../../taskerTheme';
@@ -24,9 +25,9 @@ export function MyAcceptedTasksScreen({ onBack, onNavigate }: TaskerScreenProps)
   }, []);
 
   return (
-    <View className="flex-1 bg-[#F9F9FF]">
+    <SafeAreaView className="flex-1 bg-[#F9F9FF]" edges={["top"]}>
       <TaskerHeader title="Công việc của tôi" subtitle="Quản lý yêu cầu đã chấp nhận" onBack={onBack} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-6 pb-10">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-6 pb-28">
         <Text className="text-[#111C2D] text-[30px] font-extrabold mb-2">Công việc của tôi</Text>
         <Text className="text-[#464555] mb-6">Quản lý các yêu cầu dịch vụ bạn đã chấp nhận.</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 mb-5">
@@ -108,6 +109,6 @@ export function MyAcceptedTasksScreen({ onBack, onNavigate }: TaskerScreenProps)
           </GradientButton>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }

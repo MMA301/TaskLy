@@ -1,10 +1,12 @@
 import { Banknote, CalendarDays, Package, ShoppingBasket, Wrench, Briefcase, Star, X, MessageSquare } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
 import { ScrollView, Text, TouchableOpacity, View, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconTile, TaskerCard, TaskerHeader, TaskerPill } from '../../taskerHomeLayout/components/TaskerPrimitives';
 import type { TaskerScreenProps } from '../../types';
 import { taskApplicationApi, userApi } from '../../../../service/api';
 import { setSelectedTaskId } from '../../../session';
+import { TaskDetailScreen } from './taskDetailScreen';
 
 const iconMap = { cleaning: Briefcase, delivery: Package, repair: Wrench, shopping: ShoppingBasket };
 
@@ -16,6 +18,7 @@ export function TaskHistoryScreen({ onBack, onNavigate }: TaskerScreenProps) {
 
   const [applications, setApplications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [viewingDetailTaskId, setViewingDetailTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     userApi.getProfile()
@@ -28,7 +31,11 @@ export function TaskHistoryScreen({ onBack, onNavigate }: TaskerScreenProps) {
         setApplications(apps);
       })
       .catch((err) => {
-        console.error("Lỗi khi tải lịch sử ứng tuyển:", err);
+        if (err?.status === 429 || err?.message?.includes("429")) {
+          console.warn("Lỗi 429: Quá nhiều yêu cầu API, vui lòng thử lại sau giây lát.");
+        } else {
+          console.error("Lỗi khi tải lịch sử ứng tuyển:", err);
+        }
       })
       .finally(() => {
         setIsLoading(false);
@@ -45,6 +52,15 @@ export function TaskHistoryScreen({ onBack, onNavigate }: TaskerScreenProps) {
     setRatingModalVisible(false);
   };
 
+  if (viewingDetailTaskId) {
+    return (
+      <TaskDetailScreen
+        onBack={() => setViewingDetailTaskId(null)}
+        onNavigate={onNavigate}
+      />
+    );
+  }
+
   // Computations
   const completedApps = applications.filter(app => {
     const task = app.taskId || {};
@@ -59,9 +75,9 @@ export function TaskHistoryScreen({ onBack, onNavigate }: TaskerScreenProps) {
   const completedCount = completedApps.length;
 
   return (
-    <View className="flex-1 bg-[#F9F9FF]">
+    <SafeAreaView className="flex-1 bg-[#F9F9FF]" edges={["top"]}>
       <TaskerHeader title="Lịch sử ứng tuyển" subtitle="Theo dõi các công việc đã nộp đơn và thu nhập" onBack={onBack} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-6 pb-10">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-6 pb-28">
         
         {/* Earnings Card */}
         <TaskerCard className="p-5 mb-4">
@@ -154,9 +170,10 @@ export function TaskHistoryScreen({ onBack, onNavigate }: TaskerScreenProps) {
                 <TouchableOpacity
                   key={app._id || app.id}
                   onPress={() => {
-                    if (task._id || task.id) {
-                      setSelectedTaskId(task._id || task.id);
-                      onNavigate('detail');
+                    const tId = task._id || task.id;
+                    if (tId) {
+                      setSelectedTaskId(tId);
+                      setViewingDetailTaskId(tId);
                     }
                   }}
                   activeOpacity={0.85}
@@ -243,6 +260,6 @@ export function TaskHistoryScreen({ onBack, onNavigate }: TaskerScreenProps) {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }

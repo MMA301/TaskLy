@@ -1,11 +1,13 @@
 import { Briefcase, MapPin, Package, ShoppingBasket, SlidersHorizontal, Wrench } from 'lucide-react-native';
 import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { setSelectedTaskId } from '../../../session';
 import { IconTile, TaskerCard, TaskerHeader, TaskerPill } from '../../taskerHomeLayout/components/TaskerPrimitives';
 import { TASKER_COLORS } from '../../taskerTheme';
 import type { TaskerIcon, TaskerScreenProps } from '../../types';
 import { taskApi, taskApplicationApi, userApi } from '../../../../service/api';
+import { TaskDetailScreen } from './taskDetailScreen';
 
 const iconMap = {
   cleaning: Briefcase,
@@ -19,15 +21,20 @@ export function NearbyTasksScreen({ onBack, onNavigate }: TaskerScreenProps) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [appliedTaskIds, setAppliedTaskIds] = useState<string[]>([]);
+  const [viewingDetailTaskId, setViewingDetailTaskId] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     userApi.getProfile()
       .then((userRes: any) => {
+        if (!isMounted) return;
         const currentUser = userRes.data || userRes;
         const currentUserId = currentUser._id;
 
         return taskApplicationApi.getApplications({ taskerId: currentUserId })
           .then((appRes: any) => {
+            if (!isMounted) return;
             const apps = Array.isArray(appRes) ? appRes : (appRes.data || []);
             const ids = apps.map((a: any) => {
               const tId = a.taskId?._id || a.taskId?.id || a.taskId;
@@ -39,6 +46,7 @@ export function NearbyTasksScreen({ onBack, onNavigate }: TaskerScreenProps) {
           });
       })
       .then((res: any) => {
+        if (!isMounted) return;
         const tasks = Array.isArray(res) ? res : (res.data || []);
         setTasksList(tasks);
       })
@@ -46,9 +54,26 @@ export function NearbyTasksScreen({ onBack, onNavigate }: TaskerScreenProps) {
         console.error("Lỗi khi tải công việc gần đây:", err);
       })
       .finally(() => {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  // If Tasker clicks on a task item, open TaskDetailScreen inside NearbyTasksScreen
+  if (viewingDetailTaskId) {
+    return (
+      <TaskDetailScreen
+        onBack={() => {
+          setViewingDetailTaskId(null);
+          fetchNearbyTasks();
+        }}
+        onNavigate={onNavigate}
+      />
+    );
+  }
 
   const filteredTasks = tasksList.filter((task) => {
     const taskId = task._id || task.id;
@@ -64,17 +89,17 @@ export function NearbyTasksScreen({ onBack, onNavigate }: TaskerScreenProps) {
   });
 
   return (
-    <View className="flex-1 bg-[#F9F9FF]">
+    <SafeAreaView className="flex-1 bg-[#F9F9FF]" edges={["top"]}>
       <TaskerHeader title="Tìm công việc" subtitle="Các công việc mới đang tuyển quanh bạn" onBack={onBack} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-10">
         
-        {/* Simple decorative header banner */}
+        {/* Decorative Header Banner */}
         <View className="bg-[#3525CD] px-5 py-6">
           <Text className="text-white font-extrabold text-[20px] leading-tight">Nhận việc ngay, tăng thu nhập</Text>
           <Text className="text-[#DEE8FF] text-xs mt-1">Lọc công việc theo chuyên môn của bạn và ứng tuyển nhanh chóng.</Text>
         </View>
 
-        {/* Dynamic Category Chips Filters */}
+        {/* Category Chips Filters */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="px-4 py-4 gap-2">
           <FilterChip active={selectedCategory === null} icon={SlidersHorizontal} label="Tất cả" onPress={() => setSelectedCategory(null)} />
           <FilterChip active={selectedCategory === 'cleaning'} icon={Briefcase} label="Dọn dẹp" onPress={() => setSelectedCategory('cleaning')} />
@@ -101,6 +126,7 @@ export function NearbyTasksScreen({ onBack, onNavigate }: TaskerScreenProps) {
               </View>
             ) : (
               filteredTasks.map((task: any) => {
+                const taskId = task._id || task.id;
                 const catName = (task.categoryId?.name || "").toLowerCase();
                 let iconKey = 'cleaning';
                 if (catName.includes("chuyển") || catName.includes("đồ") || catName.includes("giao")) {
@@ -115,10 +141,10 @@ export function NearbyTasksScreen({ onBack, onNavigate }: TaskerScreenProps) {
 
                 return (
                   <TouchableOpacity
-                    key={task._id || task.id}
+                    key={taskId}
                     onPress={() => {
-                      setSelectedTaskId(task._id || task.id);
-                      onNavigate('detail');
+                      setSelectedTaskId(taskId);
+                      setViewingDetailTaskId(taskId);
                     }}
                     activeOpacity={0.86}
                   >
@@ -149,7 +175,7 @@ export function NearbyTasksScreen({ onBack, onNavigate }: TaskerScreenProps) {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

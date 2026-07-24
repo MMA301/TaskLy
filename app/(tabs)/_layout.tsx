@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { BarChart2, Home, PlusCircle, Search, User, Clock } from 'lucide-react-native';
+import { BarChart2, Clock, Home, PlusCircle, Search, User, Wallet } from 'lucide-react-native';
 import { getAuthSession } from '../../src/session';
 
 export default function TabsLayout() {
@@ -21,19 +21,17 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: barBackground,
           borderTopColor: barBorder,
-          display: isStaff ? 'none' : 'flex',
+          display: 'flex',
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: isClient ? 'Trang chủ' : isStaff ? 'Tìm việc' : 'Quản trị',
+          title: isClient || isStaff ? 'Trang chủ' : 'Quản trị',
           tabBarIcon: ({ color, size }) => (
-            isClient ? (
+            isClient || isStaff ? (
               <Home size={size} color={color} />
-            ) : isStaff ? (
-              <Search size={size} color={color} />
             ) : (
               <BarChart2 size={size} color={color} />
             )
@@ -43,10 +41,20 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Tìm kiếm',
-          href: null,
+          title: 'Tìm việc',
+          href: isStaff ? undefined : null,
           tabBarIcon: ({ color, size }) => (
             <Search size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="wallet"
+        options={{
+          title: 'Ví TaskLy',
+          href: undefined,
+          tabBarIcon: ({ color, size }) => (
+            <Wallet size={size} color={color} />
           ),
         }}
       />
@@ -64,7 +72,7 @@ export default function TabsLayout() {
         name="tracking"
         options={{
           title: 'Hoạt động',
-          href: isClient ? undefined : null,
+          href: undefined,
           tabBarIcon: ({ color, size }) => (
             <Clock size={size} color={color} />
           ),

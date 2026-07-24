@@ -1,13 +1,14 @@
 import { CheckCircle2, ListChecks, MapPinned, MessageCircle, Navigation } from 'lucide-react-native';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientButton, TaskerCard, TaskerHeader, TaskerPill } from '../../taskerHomeLayout/components/TaskerPrimitives';
 import type { TaskerScreenProps } from '../../types';
 
 export function AcceptTaskScreen({ onBack, onNavigate }: TaskerScreenProps) {
   return (
-    <View className="flex-1 bg-[#F9F9FF]">
+    <SafeAreaView className="flex-1 bg-[#F9F9FF]" edges={["top"]}>
       <TaskerHeader title="Xác nhận nhận việc" onBack={onBack} />
-      <ScrollView contentContainerClassName="px-4 py-8 pb-10">
+      <ScrollView contentContainerClassName="px-4 py-8 pb-28">
         <TaskerCard className="overflow-hidden">
           <View className="h-44 bg-[#DEE8FF] items-center justify-center">
             <View className="w-24 h-24 rounded-full bg-[#E2DFFF] items-center justify-center">
@@ -51,7 +52,7 @@ export function AcceptTaskScreen({ onBack, onNavigate }: TaskerScreenProps) {
           </View>
         </TaskerCard>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -1,5 +1,6 @@
 import { CheckCheck, MoreVertical, Phone, PlusCircle, Send, Smile } from 'lucide-react-native';
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { mockTaskerData } from '../../../../mockdata';
 import { IconTile, TaskerCard, TaskerHeader } from '../../taskerHomeLayout/components/TaskerPrimitives';
 import { TASKER_COLORS, taskerShadow } from '../../taskerTheme';
@@ -7,7 +8,7 @@ import type { TaskerScreenProps } from '../../types';
 
 export function MessagesScreen({ onBack }: TaskerScreenProps) {
   return (
-    <View className="flex-1 bg-[#F9F9FF]">
+    <SafeAreaView className="flex-1 bg-[#F9F9FF]" edges={["top"]}>
       <TaskerHeader
         title="Nguyen Minh Duc"
         subtitle="Đối tác Taskly"
@@ -85,6 +86,6 @@ export function MessagesScreen({ onBack }: TaskerScreenProps) {
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }

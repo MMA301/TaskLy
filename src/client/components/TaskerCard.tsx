@@ -1,111 +1,84 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Image, Pressable, Text, View } from "react-native";
-import Colors from "../constants/Colors";
-import Layout from "../constants/Layout";
+import { Star } from "lucide-react-native";
 
 type TaskerCardProps = {
-  tasker: {
-    id: number;
-    name: string;
-    rating: string;
-    jobsCount: string;
-    skills: string[];
-    hourlyRate: string;
-    avatarUrl: string;
+  tasker?: {
+    id?: number;
+    name?: string;
+    rating?: string;
+    jobsCount?: string;
+    skills?: string[];
+    hourlyRate?: string;
+    avatarUrl?: string;
   };
+  name?: string;
+  rating?: string;
+  jobsCount?: string;
+  skills?: string[];
+  hourlyRate?: string;
+  avatarUrl?: string;
   onBookPress?: () => void;
 };
 
-export default function TaskerCard({ tasker, onBookPress }: TaskerCardProps) {
+export default function TaskerCard({
+  tasker,
+  name,
+  rating,
+  jobsCount,
+  skills,
+  hourlyRate,
+  avatarUrl,
+  onBookPress,
+}: TaskerCardProps) {
+  const tName = tasker?.name || name || "Đối tác TaskLy";
+  const tRating = tasker?.rating || rating || "5.0";
+  const tJobsCount = tasker?.jobsCount || jobsCount || "100";
+  const tSkills = tasker?.skills || skills || ["Dọn dẹp"];
+  const tHourlyRate = tasker?.hourlyRate || hourlyRate || "100.000đ";
+  const tAvatarUrl =
+    tasker?.avatarUrl ||
+    avatarUrl ||
+    `https://api.dicebear.com/7.x/avataaars/png?seed=${tName}`;
+
   return (
-    <View
-      style={{
-        width: 240,
-        backgroundColor: Colors.surface,
-        borderRadius: Layout.borderRadius.md,
-        padding: Layout.spacing.md,
-        marginRight: Layout.spacing.md,
-        borderWidth: 1,
-        borderColor: Colors.outlineVariant,
-      }}
-    >
+    <View className="w-60 bg-white rounded-2xl p-4 mr-4 border border-slate-100 shadow-sm">
       <Image
-        source={{ uri: tasker.avatarUrl }}
-        style={{
-          width: 56,
-          height: 56,
-          borderRadius: 28,
-          marginBottom: Layout.spacing.sm,
-        }}
+        source={{ uri: tAvatarUrl }}
+        className="w-14 h-14 rounded-full mb-2 bg-slate-100"
       />
-      <Text
-        style={{ fontSize: 16, fontWeight: "700", color: Colors.onSurface }}
-      >
-        {tasker.name}
-      </Text>
-      <View
-        style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}
-      >
-        <Ionicons name="star" size={14} color={Colors.star} />
-        <Text
-          style={{ color: Colors.primary, fontWeight: "600", marginLeft: 4 }}
-        >
-          {tasker.rating}
+      <Text className="text-base font-bold text-slate-900">{tName}</Text>
+      <View className="flex-row items-center mt-1">
+        <Star size={14} color="#EAB308" fill="#EAB308" />
+        <Text className="text-indigo-600 font-bold ml-1 text-xs">
+          {tRating}
         </Text>
-        <Text style={{ color: Colors.onSurfaceVariant, marginLeft: 8 }}>
-          {tasker.jobsCount} công việc
+        <Text className="text-slate-500 text-xs ml-2">
+          {tJobsCount} công việc
         </Text>
       </View>
-      <View
-        style={{
-          flexDirection: "row",
-          flexWrap: "wrap",
-          marginTop: Layout.spacing.sm,
-        }}
-      >
-        {tasker.skills.map((skill) => (
+
+      <View className="flex-row flex-wrap mt-3 gap-1.5">
+        {tSkills.map((skill) => (
           <View
             key={skill}
-            style={{
-              backgroundColor: Colors.surfaceContainer,
-              paddingHorizontal: 8,
-              paddingVertical: 4,
-              borderRadius: Layout.borderRadius.full,
-              marginRight: 6,
-              marginBottom: 6,
-            }}
+            className="bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100"
           >
-            <Text style={{ color: Colors.onSurfaceVariant, fontSize: 12 }}>
+            <Text className="text-indigo-700 text-xs font-medium">
               {skill}
             </Text>
           </View>
         ))}
       </View>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginTop: Layout.spacing.md,
-        }}
-      >
-        <Text
-          style={{ fontSize: 15, fontWeight: "700", color: Colors.primary }}
-        >
-          {tasker.hourlyRate}/giờ
+
+      <View className="flex-row justify-between items-center mt-4 pt-3 border-t border-slate-100">
+        <Text className="text-sm font-extrabold text-indigo-600">
+          {tHourlyRate}/giờ
         </Text>
         <Pressable
           onPress={onBookPress}
-          style={{
-            backgroundColor: Colors.primary,
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            borderRadius: Layout.borderRadius.default,
-          }}
+          className="bg-indigo-600 px-3.5 py-1.5 rounded-full"
         >
-          <Text style={{ color: Colors.white, fontWeight: "600" }}>
-            Đặt ngay
-          </Text>
+          <Text className="text-white text-xs font-bold">Đặt lịch</Text>
         </Pressable>
       </View>
     </View>

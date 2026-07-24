@@ -1,5 +1,6 @@
 import { Bell, Briefcase, CheckCheck, MessageCircle, Settings, WalletCards } from 'lucide-react-native';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { mockTaskerData } from '../../../../mockdata';
 import { IconTile, TaskerCard, TaskerHeader, TaskerPill } from '../../taskerHomeLayout/components/TaskerPrimitives';
 import type { TaskerIcon, TaskerScreenProps } from '../../types';
@@ -13,7 +14,7 @@ const notificationIcons: Record<string, { icon: TaskerIcon; tone: 'primary' | 's
 
 export function NotificationsScreen({ onBack }: TaskerScreenProps) {
   return (
-    <View className="flex-1 bg-[#F9F9FF]">
+    <SafeAreaView className="flex-1 bg-[#F9F9FF]" edges={["top"]}>
       <TaskerHeader
         title="Thông báo"
         subtitle="Cập nhật hoạt động mới nhất"
@@ -25,7 +26,7 @@ export function NotificationsScreen({ onBack }: TaskerScreenProps) {
           </TouchableOpacity>
         }
       />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-6 pb-10">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-6 pb-28">
         <View className="mb-6">
           <Text className="text-[#111C2D] text-[30px] font-extrabold">Thông báo</Text>
           <Text className="text-[#464555] mt-1">Cập nhật những hoạt động mới nhất của bạn</Text>
@@ -54,7 +55,7 @@ export function NotificationsScreen({ onBack }: TaskerScreenProps) {
           <Text className="text-[#464555] text-center mt-2">Empty state mẫu từ Stitch khi chưa có thông báo mới.</Text>
         </TaskerCard>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

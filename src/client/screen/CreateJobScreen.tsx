@@ -17,6 +17,8 @@ import {
   CircleDollarSign 
 } from 'lucide-react-native';
 
+import { getGeminiSmartPrice } from '../../../service/geminiService';
+
 type CreateJobScreenProps = {
   navigation: any;
 };
@@ -38,58 +40,15 @@ export default function CreateJobScreen({ navigation }: CreateJobScreenProps) {
 
     setIsLoading(true);
     try {
-      // ĐÂY LÀ ĐƯỜNG DẪN MÁY CHỦ PROXY GEMINI HOẠT ĐỘNG THỰC TẾ
-      const API_URL = 'https://ais-dev-zkfb3zs2iwn6q6pjqsamvu-1071533496526.asia-southeast1.run.app/api/gemini/smart-price';
-
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jobTitle: title,
-          jobDesc: desc,
-          location: address
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Không thể kết nối đến máy chủ.');
-      }
-
-      const data = await response.json();
+      const priceData = await getGeminiSmartPrice(title, desc, address);
       setIsLoading(false);
       
       // Điều hướng qua màn hình hiển thị kết quả AI và truyền dữ liệu phân tích sang
-      navigation.navigate('AIPricing', { priceData: data });
+      navigation.navigate('AIPricing', { priceData });
     } catch (error) {
       console.error('Error fetching smart price:', error);
       setIsLoading(false);
-      
-      // Nếu server rớt hoặc không có mạng, hệ thống tự động nhảy cơ chế dự phòng Offline mượt mà
-      navigation.navigate('AIPricing', { 
-        priceData: {
-          recommendedPrice: 250000,
-          rangeMin: 200000,
-          rangeMax: 300000,
-          complexity: 'Trung bình',
-          complexityDesc: 'Yêu cầu kiểm tra cơ khí kỹ thuật và vệ sinh lưới lọc máy lạnh.',
-          complexityPercent: 60,
-          demand: 'Cao',
-          demandDesc: 'Khu vực Quận 7 đang có sự gia tăng đột biến về nhu cầu thợ sửa điều hòa.',
-          distance: 3.2,
-          distanceDesc: 'Quãng đường di chuyển trung bình của thợ điện lạnh trong khu vực quận.',
-          marketTrend: [
-            { day: 'T2', price: 230000 },
-            { day: 'T3', price: 240000 },
-            { day: 'T4', price: 230000 },
-            { day: 'Hnay', price: 250000, isToday: true },
-            { day: 'T6', price: 270000 },
-            { day: 'T7', price: 290000 },
-            { day: 'CN', price: 280000 }
-          ],
-          jobTitle: title,
-          location: address
-        }
-      });
+      Alert.alert('Lỗi', 'Không thể phân tích giá AI lúc này.');
     }
   };
 

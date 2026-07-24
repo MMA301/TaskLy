@@ -1,28 +1,38 @@
-// screens/CreateTaskScreen.js
-import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import {
+  ActivityIndicator,
   Alert,
-  Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  MapPin,
+  Calendar,
+  Clock,
+  Banknote,
+  Sparkles,
+  Camera,
+  Paintbrush,
+  Truck,
+  Wrench,
+  ShoppingCart,
+  Shirt,
+  LucideIcon,
+} from "lucide-react-native";
 
-// Constants & Components
+// Services & Components
 import Button from "../components/Button";
-import Colors from "../constants/Colors";
-import Layout from "../constants/Layout";
 import { categoryApi, taskApi } from "../../../service/api";
+import { getGeminiSmartPrice, GeminiPriceResult } from "../../../service/geminiService";
 
 export default function ClientCreateTaskScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ taskName?: string; rate?: string }>();
+  const params = useLocalSearchParams<{ taskName?: string; rate?: string; categoryId?: string }>();
   const initialTaskName =
     typeof params.taskName === "string" ? params.taskName : "";
   const initialRate = typeof params.rate === "string" ? params.rate : "";
@@ -37,6 +47,10 @@ export default function ClientCreateTaskScreen() {
   const [timeError, setTimeError] = useState("");
   const [budget, setBudget] = useState(initialRate ? "200000" : "");
 
+  // Gemini AI Price states
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiPriceData, setAiPriceData] = useState<GeminiPriceResult | null>(null);
+
   // API dynamic states
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
@@ -47,66 +61,81 @@ export default function ClientCreateTaskScreen() {
       .then((res: any) => {
         setCategories(res);
         if (res && res.length > 0) {
-          setSelectedCategoryId(res[0]._id || res[0].id);
+          const match = params.categoryId
+            ? res.find((c: any) => (c._id || c.id) === params.categoryId)
+            : null;
+          if (match) {
+            setSelectedCategoryId(match._id || match.id);
+          } else {
+            setSelectedCategoryId(res[0]._id || res[0].id);
+          }
         }
       })
       .catch((err) => {
         console.error("Lỗi khi tải danh mục:", err);
       });
-  }, []);
+  }, [params.categoryId]);
 
   const formatBudgetInput = (text: string) => {
-    const cleaned = text.replace(/\D/g, ""); // keep only digits
+    const cleaned = text.replace(/\D/g, "");
     if (!cleaned) return "";
-    return Number(cleaned).toLocaleString("en-US"); // formats with commas
+    return Number(cleaned).toLocaleString("en-US");
+  };
+
+  const getCategoryIcon = (name: string): LucideIcon => {
+    const n = (name || "").toLowerCase();
+    if (n.includes("dọn") || n.includes("sạch")) return Paintbrush;
+    if (n.includes("chuyển") || n.includes("đồ")) return Truck;
+    if (n.includes("lắp") || n.includes("bàn") || n.includes("sửa")) return Wrench;
+    if (n.includes("mua")) return ShoppingCart;
+    if (n.includes("giặt")) return Shirt;
+    return Clock;
+  };
+
+  const formatDateInput = (text: string): string => {
+    const digits = text.replace(/\D/g, "");
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+  };
+
+  const formatTimeInput = (text: string): string => {
+    const digits = text.replace(/\D/g, "");
+    if (digits.length <= 2) return digits;
+    return `${digits.slice(0, 2)}:${digits.slice(2, 4)}`;
+  };
+
+  const handleFetchGeminiPrice = async () => {
+    if (!taskName.trim()) {
+      showAlert("Thiếu tên công việc", "Vui lòng nhập tên công việc để AI gợi ý mức giá chính xác nhất.");
+      return;
+    }
+    const catObj = categories.find((c) => c._id === selectedCategoryId || c.id === selectedCategoryId);
+    const catName = catObj?.name || "";
+
+    setAiLoading(true);
+    setAiPriceData(null);
+
+    try {
+      const result = await getGeminiSmartPrice(taskName, taskDesc, address || catName);
+      setAiPriceData(result);
+    } catch (err: any) {
+      showAlert("Lỗi Gemini AI", err.message || "Không thể tải gợi ý giá từ Gemini.");
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const handleApplyAISuggestion = () => {
-    setBudget(formatBudgetInput("250000")); // apply recommendations with commas
-  };
-
-  const getCategoryIcon = (name: string): any => {
-    const n = name.toLowerCase();
-    if (n.includes("dọn") || n.includes("sạch")) return "sparkles-outline";
-    if (n.includes("chuyển") || n.includes("giao") || n.includes("đồ")) return "cube-outline";
-    if (n.includes("lắp") || n.includes("sửa") || n.includes("setup")) return "build-outline";
-    if (n.includes("chợ") || n.includes("mua")) return "cart-outline";
-    return "time-outline";
+    if (aiPriceData) {
+      setBudget(aiPriceData.recommendedPrice.toLocaleString("en-US"));
+    }
   };
 
   const showAlert = (title: string, message: string) => {
-    if (Platform.OS === "web") {
-      alert(`${title}: ${message}`);
-    } else {
-      Alert.alert(title, message);
-    }
+    Alert.alert(title, message, [{ text: "Đã hiểu" }]);
   };
 
-  const formatDateInput = (text: string) => {
-    const cleaned = text.replace(/\D/g, ""); // keep only digits
-    let formatted = cleaned;
-    if (cleaned.length > 2) {
-      formatted = `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
-    }
-    if (cleaned.length > 4) {
-      formatted = `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4, 8)}`;
-    }
-    return formatted.slice(0, 10); // max length 10 (dd/mm/yyyy)
-  };
-
-  const formatTimeInput = (text: string) => {
-    const cleaned = text.replace(/\D/g, ""); // keep only digits
-    let formatted = cleaned;
-    if (cleaned.length > 2) {
-      formatted = `${cleaned.slice(0, 2)}:${cleaned.slice(2, 4)}`;
-    }
-    return formatted.slice(0, 5); // max length 5 (hh:mm)
-  };
-
-  /**
-   * Trả về true nếu ngày/giờ hợp lệ và KHÔNG ở trong quá khứ.
-   * dateStr: dd/mm/yyyy, timeStr: hh:mm (có thể để trống — chỉ check ngày).
-   */
   const validateDateTime = (dateStr: string, timeStr: string): string => {
     if (!dateStr || dateStr.length < 10) return "Vui lòng nhập đầy đủ ngày (dd/mm/yyyy).";
     const [dd, mm, yyyy] = dateStr.split("/").map(Number);
@@ -121,7 +150,6 @@ export default function ClientCreateTaskScreen() {
       if (hh > 23 || mins > 59) return "Giờ không hợp lệ (hh:mm).";
       selectedDate = new Date(yyyy, mm - 1, dd, hh, mins, 0, 0);
     } else {
-      // Nếu chưa nhập giờ, so sánh theo ngày (bắt đầu ngày đó)
       selectedDate = new Date(yyyy, mm - 1, dd, 0, 0, 0, 0);
     }
 
@@ -156,25 +184,21 @@ export default function ClientCreateTaskScreen() {
   };
 
   const handleSubmit = () => {
-    // 1. Validate Category
     if (!selectedCategoryId) {
       showAlert("Thiếu thông tin", "Vui lòng chọn danh mục công việc.");
       return;
     }
 
-    // 2. Validate Title (3-150 characters)
     if (!taskName || taskName.trim().length < 3 || taskName.trim().length > 150) {
       showAlert("Thiếu thông tin", "Tên công việc phải có độ dài từ 3 đến 150 ký tự.");
       return;
     }
 
-    // 3. Validate Address
     if (!address || !address.trim()) {
       showAlert("Thiếu thông tin", "Vui lòng cung cấp địa chỉ thực hiện.");
       return;
     }
 
-    // 4. Validate Date & Time (không được ở quá khứ)
     const dtError = validateDateTime(date, time);
     if (dtError) {
       setDateError(dtError);
@@ -182,7 +206,6 @@ export default function ClientCreateTaskScreen() {
       return;
     }
 
-    // 4. Validate Budget
     const cleanBudget = budget.replace(/[^0-9]/g, '');
     if (!cleanBudget) {
       showAlert("Thiếu thông tin", "Vui lòng nhập ngân sách công việc.");
@@ -208,64 +231,67 @@ export default function ClientCreateTaskScreen() {
         coordinates: [106.660172, 10.762622]
       }
     })
-      .then((createdTask: any) => {
+      .then(() => {
         setIsLoading(false);
-        showAlert("Thành công", "Đăng bài tuyển dụng thành công! Vui lòng chờ ứng viên nộp đơn.");
+        showAlert("Thành công", "Đăng bài tuyển dụng & ký quỹ thành công! Tiền sẽ được hệ thống tạm giữ an toàn cho đến khi hoàn thành.");
         router.replace("/(tabs)");
       })
       .catch((err: any) => {
         setIsLoading(false);
-        const errMsg = err.message || "Tạo công việc thất bại. Vui lòng thử lại!";
-        Alert.alert("Thất bại", errMsg);
+        const errMsg = err.message || "";
+        if (errMsg.toLowerCase().includes("insufficient wallet balance") || errMsg.toLowerCase().includes("không đủ")) {
+          Alert.alert(
+            "Số dư ví không đủ",
+            `Số dư Ví TaskLy của bạn không đủ để ký quỹ công việc này (${priceNum.toLocaleString("vi-VN")}đ).\n\nHệ thống sẽ tự động giữ khoản tiền này cho đến khi công việc hoàn tất. Vui lòng nạp tiền vào ví!`,
+            [
+              { text: "Để sau", style: "cancel" },
+              {
+                text: "Nạp tiền ngay",
+                onPress: () => router.push("/(tabs)/wallet"),
+              },
+            ]
+          );
+        } else {
+          Alert.alert("Thất bại", errMsg || "Tạo công việc thất bại. Vui lòng thử lại!");
+        }
       });
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView className="flex-1 bg-slate-50">
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{ paddingBottom: 110 }}
       >
         {/* Header Intro */}
-        <View style={styles.headerIntro}>
-          <Text style={styles.headerSubtitle}>
+        <View className="px-4 pt-3 pb-2">
+          <Text className="text-sm text-slate-500 font-medium">
             Điền thông tin chi tiết để tìm người hỗ trợ nhanh nhất.
           </Text>
         </View>
 
         {/* Section 1: Basic Info */}
-        <View style={styles.card}>
-          <Text style={styles.sectionHeader}>DANH MỤC CÔNG VIỆC</Text>
+        <View className="bg-white rounded-2xl p-4 mx-4 mt-3 border border-slate-100 shadow-sm">
+          <Text className="text-xs font-bold text-indigo-600 tracking-wider mb-3 uppercase">DANH MỤC CÔNG VIỆC</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryScroll}
-            style={{ marginBottom: 15 }}
+            className="mb-4"
           >
             {categories.map((cat) => {
               const isSelected = selectedCategoryId === cat._id;
+              const IconComp = getCategoryIcon(cat.name);
               return (
                 <TouchableOpacity
                   key={cat._id}
                   onPress={() => setSelectedCategoryId(cat._id)}
-                  style={[
-                    styles.categoryChip,
-                    isSelected && styles.categoryChipSelected,
-                  ]}
+                  className={`flex-row items-center px-3.5 py-2 rounded-full mr-2 border ${
+                    isSelected ? "bg-indigo-600 border-indigo-600" : "bg-indigo-50 border-indigo-100"
+                  }`}
                   activeOpacity={0.7}
                 >
-                  <Ionicons
-                    name={getCategoryIcon(cat.name)}
-                    size={14}
-                    color={isSelected ? Colors.white : Colors.primary}
-                    style={{ marginRight: 6 }}
-                  />
-                  <Text
-                    style={[
-                      styles.categoryChipText,
-                      isSelected && styles.categoryChipTextSelected,
-                    ]}
-                  >
+                  <IconComp size={14} color={isSelected ? "#FFFFFF" : "#3525CD"} style={{ marginRight: 6 }} />
+                  <Text className={`text-xs font-bold ${isSelected ? "text-white" : "text-indigo-700"}`}>
                     {cat.name}
                   </Text>
                 </TouchableOpacity>
@@ -273,25 +299,25 @@ export default function ClientCreateTaskScreen() {
             })}
           </ScrollView>
 
-          <Text style={styles.sectionHeader}>THÔNG TIN CƠ BẢN</Text>
+          <Text className="text-xs font-bold text-indigo-600 tracking-wider mb-3 uppercase">THÔNG TIN CƠ BẢN</Text>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Tên công việc</Text>
+          <View className="mb-4">
+            <Text className="text-xs font-semibold text-slate-700 mb-1.5">Tên công việc</Text>
             <TextInput
-              style={styles.textInput}
+              className="h-12 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 bg-white"
               placeholder="VD: Dọn dẹp nhà cửa, Sửa ống nước..."
-              placeholderTextColor={Colors.outline}
+              placeholderTextColor="#94A3B8"
               value={taskName}
               onChangeText={setTaskName}
             />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Mô tả chi tiết</Text>
+          <View className="mb-1">
+            <Text className="text-xs font-semibold text-slate-700 mb-1.5">Mô tả chi tiết</Text>
             <TextInput
-              style={[styles.textInput, styles.textArea]}
+              className="h-24 border border-slate-200 rounded-xl p-3 text-sm text-slate-900 bg-white text-top"
               placeholder="Mô tả rõ yêu cầu của bạn để Tasker hiểu rõ hơn..."
-              placeholderTextColor={Colors.outline}
+              placeholderTextColor="#94A3B8"
               multiline
               numberOfLines={4}
               value={taskDesc}
@@ -301,45 +327,32 @@ export default function ClientCreateTaskScreen() {
         </View>
 
         {/* Section 2: Location & Timing */}
-        <View style={styles.card}>
-          <Text style={styles.sectionHeader}>THỜI GIAN & ĐỊA ĐIỂM</Text>
+        <View className="bg-white rounded-2xl p-4 mx-4 mt-3 border border-slate-100 shadow-sm">
+          <Text className="text-xs font-bold text-indigo-600 tracking-wider mb-3 uppercase">THỜI GIAN & ĐỊA ĐIỂM</Text>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Địa chỉ thực hiện</Text>
-            <View style={styles.inputWithIconContainer}>
-              <Ionicons
-                name="location-outline"
-                size={20}
-                color={Colors.outline}
-                style={styles.fieldIcon}
-              />
+          <View className="mb-4">
+            <Text className="text-xs font-semibold text-slate-700 mb-1.5">Địa chỉ thực hiện</Text>
+            <View className="flex-row items-center border border-slate-200 rounded-xl px-3 h-12 bg-white">
+              <MapPin size={18} color="#64748B" className="mr-2" />
               <TextInput
-                style={styles.textInputWithIcon}
+                className="flex-1 text-sm text-slate-900 ml-2"
                 placeholder="Nhập địa chỉ của bạn"
-                placeholderTextColor={Colors.outline}
+                placeholderTextColor="#94A3B8"
                 value={address}
                 onChangeText={setAddress}
               />
             </View>
           </View>
 
-          <View style={styles.rowGrid}>
-            <View style={[styles.inputGroup, styles.flexHalf]}>
-              <Text style={styles.inputLabel}>Ngày</Text>
-              <View style={styles.inputWithIconContainer}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={18}
-                  color={Colors.outline}
-                  style={styles.fieldIcon}
-                />
+          <View className="flex-row gap-3">
+            <View className="flex-1 mb-1">
+              <Text className="text-xs font-semibold text-slate-700 mb-1.5">Ngày</Text>
+              <View className={`flex-row items-center border rounded-xl px-3 h-12 bg-white ${dateError ? "border-red-500" : "border-slate-200"}`}>
+                <Calendar size={18} color="#64748B" />
                 <TextInput
-                  style={[
-                    styles.textInputWithIcon,
-                    dateError ? { borderColor: "#EF4444" } : undefined,
-                  ]}
+                  className="flex-1 text-sm text-slate-900 ml-2"
                   placeholder="dd/mm/yyyy"
-                  placeholderTextColor={Colors.outline}
+                  placeholderTextColor="#94A3B8"
                   keyboardType="numeric"
                   value={date}
                   onChangeText={(val) => {
@@ -354,27 +367,19 @@ export default function ClientCreateTaskScreen() {
                   }}
                 />
               </View>
-            {dateError ? (
-              <Text style={{ color: "#EF4444", fontSize: 11, marginTop: 4, marginLeft: 2 }}>{dateError}</Text>
-            ) : null}
+              {dateError ? (
+                <Text className="text-red-500 text-[11px] mt-1 ml-0.5">{dateError}</Text>
+              ) : null}
             </View>
 
-            <View style={[styles.inputGroup, styles.flexHalf]}>
-              <Text style={styles.inputLabel}>Giờ</Text>
-              <View style={styles.inputWithIconContainer}>
-                <Ionicons
-                  name="time-outline"
-                  size={18}
-                  color={Colors.outline}
-                  style={styles.fieldIcon}
-                />
+            <View className="flex-1 mb-1">
+              <Text className="text-xs font-semibold text-slate-700 mb-1.5">Giờ</Text>
+              <View className={`flex-row items-center border rounded-xl px-3 h-12 bg-white ${timeError ? "border-red-500" : "border-slate-200"}`}>
+                <Clock size={18} color="#64748B" />
                 <TextInput
-                  style={[
-                    styles.textInputWithIcon,
-                    timeError ? { borderColor: "#EF4444" } : undefined,
-                  ]}
+                  className="flex-1 text-sm text-slate-900 ml-2"
                   placeholder="hh:mm"
-                  placeholderTextColor={Colors.outline}
+                  placeholderTextColor="#94A3B8"
                   keyboardType="numeric"
                   value={time}
                   onChangeText={(val) => {
@@ -388,30 +393,25 @@ export default function ClientCreateTaskScreen() {
                   }}
                 />
               </View>
-            {timeError ? (
-              <Text style={{ color: "#EF4444", fontSize: 11, marginTop: 4, marginLeft: 2 }}>{timeError}</Text>
-            ) : null}
+              {timeError ? (
+                <Text className="text-red-500 text-[11px] mt-1 ml-0.5">{timeError}</Text>
+              ) : null}
             </View>
           </View>
         </View>
 
         {/* Section 3: Budget */}
-        <View style={styles.card}>
-          <Text style={styles.sectionHeader}>NGÂN SÁCH</Text>
+        <View className="bg-white rounded-2xl p-4 mx-4 mt-3 border border-slate-100 shadow-sm">
+          <Text className="text-xs font-bold text-indigo-600 tracking-wider mb-3 uppercase">NGÂN SÁCH</Text>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Ngân sách dự kiến (VND)</Text>
-            <View style={styles.inputWithIconContainer}>
-              <Ionicons
-                name="cash-outline"
-                size={20}
-                color={Colors.outline}
-                style={styles.fieldIcon}
-              />
+          <View className="mb-3">
+            <Text className="text-xs font-semibold text-slate-700 mb-1.5">Ngân sách dự kiến (VND)</Text>
+            <View className="flex-row items-center border border-slate-200 rounded-xl px-3 h-12 bg-white">
+              <Banknote size={18} color="#64748B" />
               <TextInput
-                style={styles.textInputWithIcon}
+                className="flex-1 text-sm font-bold text-slate-900 ml-2"
                 placeholder="VD: 200,000"
-                placeholderTextColor={Colors.outline}
+                placeholderTextColor="#94A3B8"
                 keyboardType="numeric"
                 value={budget}
                 onChangeText={(val) => setBudget(formatBudgetInput(val))}
@@ -420,261 +420,71 @@ export default function ClientCreateTaskScreen() {
           </View>
 
           {/* AI Suggestion Box */}
-          <View style={styles.aiSuggestionCard}>
-            <View style={styles.aiIconBadge}>
-              <Ionicons name="sparkles" size={18} color={Colors.primary} />
+          <View className="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3.5 flex-row gap-3">
+            <View className="w-8 h-8 rounded-full bg-indigo-100 items-center justify-center">
+              <Sparkles size={16} color="#3525CD" />
             </View>
-            <View style={styles.aiTextContainer}>
-              <Text style={styles.aiTitle}>Gợi ý giá từ Taskly AI</Text>
-              <Text style={styles.aiDesc}>
-                Dựa trên thị trường, mức giá hợp lý cho công việc này khoảng{" "}
-                <Text style={styles.aiPriceHighlight}>150.000đ - 250.000đ</Text>
-                .
-              </Text>
-              <TouchableOpacity onPress={handleApplyAISuggestion}>
-                <Text style={styles.aiApplyButton}>Áp dụng giá gợi ý</Text>
-              </TouchableOpacity>
+            <View className="flex-1">
+              <Text className="text-xs font-extrabold text-indigo-900 mb-1">Gợi ý giá từ Taskly AI (Gemini)</Text>
+
+              {aiLoading ? (
+                <View className="flex-row items-center gap-2 my-1.5">
+                  <ActivityIndicator size="small" color="#3525CD" />
+                  <Text className="text-xs text-indigo-700">Đang gọi Google Gemini AI phân tích giá...</Text>
+                </View>
+              ) : aiPriceData ? (
+                <>
+                  <Text className="text-xs text-slate-700">
+                    Khuyến nghị:{" "}
+                    <Text className="font-extrabold text-indigo-600">
+                      {aiPriceData.recommendedPrice.toLocaleString("vi-VN")}đ
+                    </Text>{" "}
+                    ({aiPriceData.rangeMin.toLocaleString("vi-VN")}đ - {aiPriceData.rangeMax.toLocaleString("vi-VN")}đ)
+                  </Text>
+                  <Text className="text-[11px] text-slate-500 mt-0.5">
+                    Độ phức tạp: {aiPriceData.complexity} • Nhu cầu: {aiPriceData.demand}
+                  </Text>
+                  <TouchableOpacity onPress={handleApplyAISuggestion} className="mt-1.5">
+                    <Text className="text-xs font-bold text-indigo-600 underline">Áp dụng mức giá khuyến nghị này</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text className="text-xs text-slate-600">
+                    Nhập tên công việc và nhấn bên dưới để Google Gemini phân tích mức giá thị trường tối ưu.
+                  </Text>
+                  <TouchableOpacity onPress={handleFetchGeminiPrice} className="mt-1.5">
+                    <Text className="text-xs font-bold text-indigo-600">✨ Phân tích & Gợi ý giá cùng Gemini AI</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
         </View>
 
         {/* Section 4: Attachments */}
-        <View style={styles.card}>
-          <View style={styles.attachmentHeader}>
-            <Text style={styles.sectionHeader}>HÌNH ẢNH ĐÍNH KÈM</Text>
-            <Text style={styles.optionalText}>Tùy chọn</Text>
+        <View className="bg-white rounded-2xl p-4 mx-4 mt-3 border border-slate-100 shadow-sm">
+          <View className="flex-row justify-between items-center mb-3">
+            <Text className="text-xs font-bold text-indigo-600 tracking-wider uppercase">HÌNH ẢNH ĐÍNH KÈM</Text>
+            <Text className="text-xs text-slate-400 font-medium">Tùy chọn</Text>
           </View>
 
-          <TouchableOpacity style={styles.uploadArea} activeOpacity={0.7}>
-            <View style={styles.uploadIconCircle}>
-              <Ionicons
-                name="camera-outline"
-                size={28}
-                color={Colors.primary}
-              />
+          <TouchableOpacity className="border-2 border-dashed border-slate-200 rounded-xl p-5 items-center bg-slate-50/50" activeOpacity={0.7}>
+            <View className="w-12 h-12 rounded-full bg-indigo-50 items-center justify-center mb-2 border border-indigo-100">
+              <Camera size={24} color="#3525CD" />
             </View>
-            <Text style={styles.uploadMainText}>Nhấn để tải ảnh lên</Text>
-            <Text style={styles.uploadSubText}>
+            <Text className="text-xs font-bold text-slate-800">Nhấn để tải ảnh lên</Text>
+            <Text className="text-[11px] text-slate-400 mt-0.5">
               Hỗ trợ JPG, PNG (Tối đa 5MB)
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* Form Submit Button */}
-        <View style={styles.buttonContainer}>
+        <View className="px-4 mt-5">
           <Button title={isLoading ? "Đang xử lý..." : "Đăng bài"} onPress={handleSubmit} disabled={isLoading} />
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  scrollContent: {
-    paddingBottom: 110,
-  },
-  headerIntro: {
-    paddingHorizontal: Layout.spacing.md,
-    paddingTop: Layout.spacing.sm,
-    paddingBottom: Layout.spacing.sm,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: Colors.onSurfaceVariant,
-    lineHeight: 20,
-  },
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: Layout.borderRadius.md,
-    padding: Layout.spacing.md,
-    marginHorizontal: Layout.spacing.md,
-    marginTop: Layout.spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.outlineVariant + "33",
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  sectionHeader: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: Colors.primary,
-    letterSpacing: 1,
-    marginBottom: Layout.spacing.md,
-  },
-  inputGroup: {
-    marginBottom: Layout.spacing.md,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: Colors.onSurface,
-    marginBottom: 6,
-  },
-  textInput: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: Colors.outlineVariant,
-    borderRadius: Layout.borderRadius.default,
-    paddingHorizontal: Layout.spacing.md,
-    fontSize: 15,
-    color: Colors.onSurface,
-    backgroundColor: Colors.background,
-  },
-  textArea: {
-    height: 100,
-    paddingTop: Layout.spacing.sm,
-    textAlignVertical: "top",
-  },
-  inputWithIconContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.outlineVariant,
-    borderRadius: Layout.borderRadius.default,
-    height: 48,
-    backgroundColor: Colors.background,
-  },
-  fieldIcon: {
-    paddingLeft: Layout.spacing.md,
-    paddingRight: Layout.spacing.sm,
-  },
-  textInputWithIcon: {
-    flex: 1,
-    height: "100%",
-    fontSize: 15,
-    color: Colors.onSurface,
-  },
-  rowGrid: {
-    flexDirection: "row",
-    gap: Layout.spacing.md,
-  },
-  flexHalf: {
-    flex: 1,
-  },
-  aiSuggestionCard: {
-    flexDirection: "row",
-    backgroundColor: Colors.surfaceContainer,
-    borderWidth: 1,
-    // borderColor: Colors.surfaceDim,
-    borderRadius: Layout.borderRadius.default,
-    padding: Layout.spacing.md,
-    marginTop: Layout.spacing.sm,
-  },
-  aiIconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.white,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    marginRight: Layout.spacing.md,
-  },
-  aiTextContainer: {
-    flex: 1,
-  },
-  aiTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.primary,
-    marginBottom: 2,
-  },
-  aiDesc: {
-    fontSize: 13,
-    color: Colors.onSurfaceVariant,
-    lineHeight: 18,
-  },
-  aiPriceHighlight: {
-    color: Colors.primary,
-    fontWeight: "600",
-  },
-  aiApplyButton: {
-    fontSize: 12,
-    color: Colors.primary,
-    fontWeight: "600",
-    textDecorationLine: "underline",
-    marginTop: 8,
-  },
-  attachmentHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: Layout.spacing.md,
-  },
-  optionalText: {
-    fontSize: 12,
-    color: Colors.outline,
-    fontWeight: "500",
-  },
-  uploadArea: {
-    borderWidth: 2,
-    borderColor: Colors.outlineVariant,
-    borderStyle: "dashed",
-    borderRadius: Layout.borderRadius.md,
-    padding: Layout.spacing.lg,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.background,
-  },
-  uploadIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.surfaceContainer,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Layout.spacing.sm,
-  },
-  uploadMainText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.onSurface,
-  },
-  uploadSubText: {
-    fontSize: 12,
-    color: Colors.onSurfaceVariant,
-    marginTop: 2,
-  },
-  buttonContainer: {
-    padding: Layout.spacing.md,
-    marginTop: Layout.spacing.lg,
-  },
-  categoryScroll: {
-    paddingRight: Layout.spacing.md,
-    gap: 8,
-  },
-  categoryChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: Colors.background,
-    borderWidth: 1,
-    borderColor: Colors.outlineVariant,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  categoryChipSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  categoryChipText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: Colors.onSurfaceVariant,
-  },
-  categoryChipTextSelected: {
-    color: Colors.white,
-    fontWeight: '600',
-  },
-});

@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Bell, CheckCircle2, ChevronRight, Headphones, Lock, LogOut, UserRound, WalletCards, Wrench, ShieldCheck, X, Upload } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
 import { ScrollView, Text, TouchableOpacity, View, Modal, Image, Alert, TextInput } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { mockTaskerData } from '../../../../mockdata';
 import { IconTile, TaskerCard, TaskerHeader, TaskerPill } from '../../taskerHomeLayout/components/TaskerPrimitives';
@@ -13,7 +14,7 @@ import { TaskHistoryScreen } from '../../taskerTasksLayout/screen/taskHistoryScr
 import { EarningsDashboardScreen } from './earningsDashboardScreen';
 import { ReviewsRatingsScreen } from './reviewsRatingsScreen';
 import { ScheduleCalendarScreen } from './scheduleCalendarScreen';
-import { userApi } from '../../../../service/api';
+import { taskApplicationApi, userApi, walletApi } from '../../../../service/api';
 
 type TaskerProfileScreenProps = {
   embedded?: boolean;
@@ -30,6 +31,9 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
   
   // Profile data states
   const [profileData, setProfileData] = useState<any>(null);
+  const [completedJobsCount, setCompletedJobsCount] = useState<number>(0);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+
   const [bio, setBio] = useState("");
   const [hourlyRate, setHourlyRate] = useState("");
   const [experience, setExperience] = useState("");
@@ -38,9 +42,7 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
 
   const back = () => setScreen('profile');
   const navigate = (next: TaskerScreenKey) => {
-    if (next === 'earnings' || next === 'reviews' || next === 'schedule' || next === 'nearby' || next === 'accept' || next === 'history') {
-      setScreen(next);
-    }
+    setScreen(next as ProfileLocalScreen);
   };
 
   const handleLogout = () => {
@@ -50,20 +52,37 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
   const loadProfile = () => {
     userApi.getProfile()
       .then((res: any) => {
-        // Axios client returns response data
         const data = res.data || res;
         setProfileData(data);
         if (data.taskerProfile) {
           setBio(data.taskerProfile.bio || "");
-          setHourlyRate(data.taskerProfile.hourlyRate?.toString() || "");
+          setHourlyRate(data.taskerProfile.hourlyRate ? data.taskerProfile.hourlyRate.toString() : "");
           setExperience(data.taskerProfile.experience || "");
           setSkillsText(data.taskerProfile.skills?.join(", ") || "");
           setServiceAreasText(data.taskerProfile.serviceAreas?.join(", ") || "");
+        }
+        if (data._id) {
+          taskApplicationApi.getApplications({ taskerId: data._id })
+            .then((appRes: any) => {
+              const apps = Array.isArray(appRes) ? appRes : (appRes.data || []);
+              const completed = apps.filter((a: any) => a.taskId?.status === "completed" || a.status === "accepted").length;
+              setCompletedJobsCount(completed);
+            })
+            .catch(() => {});
         }
       })
       .catch((err) => {
         console.error("Error loading profile:", err);
       });
+
+    walletApi.getWallet()
+      .then((res: any) => {
+        const wData = res.data || res;
+        if (typeof wData?.balance === "number") {
+          setWalletBalance(wData.balance);
+        }
+      })
+      .catch(() => {});
   };
 
   useEffect(() => {
@@ -80,9 +99,9 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
   const profile = mockTaskerData.profile;
 
   return (
-    <View className="flex-1 bg-[#F9F9FF]">
+    <SafeAreaView className="flex-1 bg-[#F9F9FF]" edges={["top"]}>
       <TaskerHeader title="Hồ sơ Tasker" subtitle={profile.level} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-6 pb-8">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-6 pb-28">
         <TaskerCard className="p-5 mb-5 bg-[#F0F3FF]">
           <View className="items-center">
             <View className="relative mb-4">
@@ -99,7 +118,7 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
             </View>
             <Text className="text-[#464555] text-center mt-4 leading-6">{profileData?.taskerProfile?.bio || profile.bio}</Text>
             <View className="flex-row justify-between w-full mt-6">
-              <ProfileStat value={`${profile.completedJobs}`} label="Công việc" />
+              <ProfileStat value={`${completedJobsCount > 0 ? completedJobsCount : profile.completedJobs}`} label="Công việc" />
               <View className="w-[1px] bg-[#C7C4D8]" />
               <ProfileStat value={`${profile.rating}/5`} label="Đánh giá" />
               <View className="w-[1px] bg-[#C7C4D8]" />
@@ -136,7 +155,9 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
                 <WalletCards size={20} color="#FFFFFF" />
               </View>
               <Text className="text-white text-[16px] font-extrabold">Ví tiền</Text>
-              <Text className="text-white/70 text-[12px] mt-1">Rút tiền và giao dịch</Text>
+              <Text className="text-white/80 text-[12px] font-bold mt-1">
+                {walletBalance !== null ? `${walletBalance.toLocaleString("vi-VN")}đ` : "Rút tiền và giao dịch"}
+              </Text>
             </LinearGradient>
           </TouchableOpacity>
 
@@ -403,7 +424,7 @@ export function TaskerProfileScreen({ embedded = false }: TaskerProfileScreenPro
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 

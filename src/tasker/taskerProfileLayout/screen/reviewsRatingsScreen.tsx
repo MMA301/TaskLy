@@ -1,14 +1,15 @@
 import { SlidersHorizontal, Star } from 'lucide-react-native';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { mockTaskerData } from '../../../../mockdata';
 import { TaskerCard, TaskerHeader, TaskerPill } from '../../taskerHomeLayout/components/TaskerPrimitives';
 import type { TaskerScreenProps } from '../../types';
 
 export function ReviewsRatingsScreen({ onBack }: TaskerScreenProps) {
   return (
-    <View className="flex-1 bg-[#F9F9FF]">
+    <SafeAreaView className="flex-1 bg-[#F9F9FF]" edges={["top"]}>
       <TaskerHeader title="Đánh giá & Nhận xét" subtitle="Uy tín từ khách hàng" onBack={onBack} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-6 pb-10">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-6 pb-28">
         <TaskerCard className="p-5 mb-4">
           <Text className="text-[#111C2D] text-[20px] font-extrabold mb-4">Đánh giá chung</Text>
           <View className="flex-row items-end gap-3 mb-5">
@@ -62,7 +63,7 @@ export function ReviewsRatingsScreen({ onBack }: TaskerScreenProps) {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

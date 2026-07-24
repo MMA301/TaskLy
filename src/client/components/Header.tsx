@@ -1,7 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
-import Colors from "../constants/Colors";
-import Layout from "../constants/Layout";
+import { User } from "lucide-react-native";
 
 type HeaderProps = {
   title: string;
@@ -10,37 +8,15 @@ type HeaderProps = {
 
 export default function Header({ title, onProfilePress }: HeaderProps) {
   return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: Layout.spacing.md,
-        paddingVertical: Layout.spacing.md,
-        backgroundColor: Colors.surface,
-      }}
-    >
-      <Text
-        style={{ fontSize: 24, fontWeight: "700", color: Colors.onSurface }}
-      >
+    <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-slate-100">
+      <Text className="text-2xl font-bold text-slate-900">
         {title}
       </Text>
       <Pressable
         onPress={onProfilePress}
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 20,
-          backgroundColor: Colors.surfaceContainer,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
+        className="w-10 h-10 rounded-full bg-indigo-50 items-center justify-center border border-indigo-100"
       >
-        <Ionicons
-          name="person-circle-outline"
-          size={24}
-          color={Colors.primary}
-        />
+        <User size={20} color="#3525CD" />
       </Pressable>
     </View>
   );

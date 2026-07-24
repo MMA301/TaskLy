@@ -19,7 +19,7 @@ import {
   subscribe,
   Task,
 } from "../../session";
-import { taskApi, taskApplicationApi, paymentApi, reviewApi } from "../../../service/api";
+import { taskApi, taskApplicationApi, paymentApi, reviewApi, walletApi } from "../../../service/api";
 import { ActivityIndicator } from "react-native";
 
 export default function ClientJobDetailsScreen() {
@@ -152,11 +152,13 @@ export default function ClientJobDetailsScreen() {
   };
 
   const handleCancelTask = () => {
+    const priceStr = typeof task.price === "number" ? task.price.toLocaleString("vi-VN") + "đ" : task.price;
+    const msg = `Bạn có chắc muốn hủy công việc này không?\n\nNếu đã ký quỹ (${priceStr}), tiền sẽ được hệ thống hoàn trả lại ngay vào Ví TaskLy của bạn.`;
     if (Platform.OS === "web") {
-      const confirm = window.confirm("Bạn có chắc chắn muốn hủy bỏ công việc này?");
+      const confirm = window.confirm(msg);
       if (confirm) executeCancel();
     } else {
-      Alert.alert("Hủy công việc", "Bạn có chắc muốn xóa vĩnh viễn bài đăng này?", [
+      Alert.alert("Hủy công việc", msg, [
         { text: "Không", style: "cancel" },
         { text: "Đồng ý hủy", style: "destructive", onPress: executeCancel },
       ]);
@@ -168,7 +170,7 @@ export default function ClientJobDetailsScreen() {
     taskApi.cancelTask(task._id || task.id)
       .then(() => {
         setIsLoading(false);
-        showAlert("Đã hủy", "Đã xóa bài đăng thành công.");
+        showAlert("Thành công", "Đã hủy công việc thành công! Tiền ký quỹ (nếu có) đã được hoàn trả lại vào Ví TaskLy của bạn.");
         router.replace("/(tabs)");
       })
       .catch((err: any) => {
@@ -181,45 +183,7 @@ export default function ClientJobDetailsScreen() {
     showAlert("Thông báo", "Vui lòng duyệt một ứng viên bên dưới để thực hiện ký quỹ thanh toán.");
   };
 
-  const handleRefund = () => {
-    if (Platform.OS === "web") {
-      const confirm = window.confirm("Yêu cầu hoàn tiền và hủy phân công công việc này về ví của bạn?");
-      if (confirm) executeRefund();
-    } else {
-      Alert.alert(
-        "Hoàn tiền ký quỹ",
-        "Hệ thống sẽ hoàn trả số tiền ký quỹ về ví của bạn và đặt công việc về trạng thái ban đầu?",
-        [
-          { text: "Không", style: "cancel" },
-          { text: "Đồng ý hoàn tiền", onPress: executeRefund },
-        ]
-      );
-    }
-  };
 
-  const executeRefund = () => {
-    setIsLoading(true);
-    paymentApi.getMyPayments({ taskId: task._id || task.id })
-      .then((res: any) => {
-        const activePayment = res.find((p: any) => p.status === "paid");
-        if (activePayment) {
-          return paymentApi.refundPayment(activePayment._id);
-        }
-        throw new Error("Không tìm thấy giao dịch ký quỹ đang hoạt động.");
-      })
-      .then(() => {
-        showAlert("Thành công", "Đã hoàn tiền thành công!");
-        return taskApi.getTaskById(task._id || task.id);
-      })
-      .then((res: any) => {
-        setIsLoading(false);
-        setTask(res);
-      })
-      .catch((err: any) => {
-        setIsLoading(false);
-        showAlert("Thất bại", err.message || "Hoàn tiền ký quỹ thất bại.");
-      });
-  };
 
   const handleReleasePayment = () => {
     setIsLoading(true);
@@ -624,32 +588,20 @@ export default function ClientJobDetailsScreen() {
 
             {/* Escrowed tasker release / refund */}
             {isEscrowed && (
-              <View>
-                <Text className="text-xs text-slate-500 leading-relaxed mb-4">
-                  Số tiền ký quỹ {task.price} đang được hệ thống tạm khóa an toàn. Bạn có thể giải ngân thủ công cho Tasker hoặc yêu cầu hoàn tiền nếu giao dịch bị hủy.
+              <View className="mb-2">
+                <Text className="text-xs text-slate-500 leading-relaxed mb-3">
+                  Số tiền ký quỹ {typeof task.price === 'number' ? task.price.toLocaleString("vi-VN") + "đ" : task.price} đang được hệ thống tạm khóa an toàn. Bạn có thể giải ngân thủ công cho Tasker sau khi công việc hoàn thành.
                 </Text>
                 
-                <View className="flex-row justify-between space-x-3 mb-3">
-                  <TouchableOpacity
-                    disabled={isLoading}
-                    onPress={handleReleasePayment}
-                    className="flex-1 bg-emerald-600 py-3 rounded-xl flex-row items-center justify-center space-x-1.5"
-                    style={isLoading ? { opacity: 0.5 } : null}
-                  >
-                    <Ionicons name="checkmark-circle-outline" size={15} color="white" />
-                    <Text className="text-white font-bold text-xs">Giải ngân (Release)</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity
-                    disabled={isLoading}
-                    onPress={handleRefund}
-                    className="flex-1 bg-red-500 py-3 rounded-xl flex-row items-center justify-center space-x-1.5"
-                    style={isLoading ? { opacity: 0.5 } : null}
-                  >
-                    <Ionicons name="close-circle-outline" size={15} color="white" />
-                    <Text className="text-white font-bold text-xs">Hoàn tiền (Refund)</Text>
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                  disabled={isLoading}
+                  onPress={handleReleasePayment}
+                  className="w-full bg-emerald-600 py-3.5 rounded-xl flex-row items-center justify-center space-x-1.5"
+                  style={isLoading ? { opacity: 0.5 } : null}
+                >
+                  <Ionicons name="checkmark-circle-outline" size={18} color="white" />
+                  <Text className="text-white font-bold text-xs">Giải ngân cho Tasker (Release)</Text>
+                </TouchableOpacity>
               </View>
             )}
 
@@ -664,16 +616,16 @@ export default function ClientJobDetailsScreen() {
               </View>
             )}
 
-            {/* Cancel task only when unpaid and status is open or assigned */}
-            {isUnpaid && (task.status === "open" || task.status === "assigned") && (
+            {/* Cancel task when status is open or assigned */}
+            {(task.status === "open" || task.status === "assigned") && (
               <TouchableOpacity
                 disabled={isLoading}
                 onPress={handleCancelTask}
-                className="mt-3 w-full border border-red-500 bg-red-50 py-3 rounded-xl flex-row items-center justify-center space-x-1.5"
+                className="mt-3 w-full border border-red-500 bg-red-50 py-3.5 rounded-xl flex-row items-center justify-center space-x-1.5"
                 style={isLoading ? { opacity: 0.5 } : null}
               >
-                <Ionicons name="trash-outline" size={16} color="#DC2626" />
-                <Text className="text-red-700 font-bold text-xs">Hủy bỏ Task (Delete)</Text>
+                <Ionicons name="close-circle-outline" size={18} color="#DC2626" />
+                <Text className="text-red-700 font-bold text-xs">Hủy công việc & Hoàn tiền vào Ví</Text>
               </TouchableOpacity>
             )}
           </View>

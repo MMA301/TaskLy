@@ -1,113 +1,175 @@
-// screens/CheckoutScreen.js
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import type { ComponentProps } from "react";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  Wallet,
+  QrCode,
+  CreditCard,
+  Banknote,
+  CheckCircle2,
+  XCircle,
+  Home,
+  Copy,
+  Clock,
+} from "lucide-react-native";
 
-// Constants & Store
-import { addTask } from "../../session";
 import Colors from "../constants/Colors";
-import Layout from "../constants/Layout";
 import { paymentApi, taskApplicationApi } from "../../../service/api";
-import { ActivityIndicator } from "react-native";
 
 export default function ClientCheckoutScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
+    // Deposit payment params
+    paymentId?: string;
+    type?: string;
+    paymentCode?: string;
+    qrCode?: string;
+    expiresAt?: string;
+    // Task checkout params
     taskName?: string;
     taskDesc?: string;
     address?: string;
     date?: string;
     time?: string;
     budget?: string;
+    taskId?: string;
+    applicationId?: string;
+    amount?: string;
+    provider?: string;
   }>();
 
+  const isDepositFlow = Boolean(params.paymentId || params.type === "deposit");
+
+  // Deposit Params
+  const paymentId = params.paymentId || "";
+  const depositAmountNum = Number(params.amount || "100000");
+  const depositProvider = (params.provider || "momo").toUpperCase();
+  const paymentCode = params.paymentCode || "PAY-TASKLY-DEPOSIT";
+
+  // Task Checkout Params
   const taskName = params.taskName || "Dọn dẹp căn hộ 2 phòng ngủ";
-  const taskDesc = params.taskDesc || "Mình cần một bạn dọn dẹp căn hộ 2 phòng ngủ, 1 phòng khách, 2 WC tại chung cư Sunrise City. Yêu cầu làm kỹ, sạch sẽ.";
-  const address = params.address || "Tòa Landmark 81, Vinhomes Central Park, Quận Bình Thạnh, TP.HCM";
   const dateVal = params.date || "Hôm nay";
   const timeVal = params.time || "14:00";
   const budgetStr = params.budget || "500000";
-  const rawBudget = parseInt(budgetStr.replace(/[^0-9]/g, '')) || 500000;
-  const formattedBudget = rawBudget.toLocaleString('vi-VN') + "đ";
+  const rawBudget = parseInt(budgetStr.replace(/[^0-9]/g, "")) || 500000;
 
-  const [promoCode, setPromoCode] = useState("");
   const [selectedPayment, setSelectedPayment] = useState("momo");
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const paymentMethods: {
-    id: string;
-    title: string;
-    subtitle: string;
-    iconName: ComponentProps<typeof Ionicons>["name"];
-    color: string;
-  }[] = [
-      {
-        id: "momo",
-        title: "Ví MoMo",
-        subtitle: "Đã liên kết",
-        iconName: "wallet",
-        color: "#A50064",
-      },
-      {
-        id: "vnpay",
-        title: "VNPAY",
-        subtitle: "",
-        iconName: "qr-code",
-        color: "#005BAA",
-      },
-      {
-        id: "credit",
-        title: "Thẻ tín dụng / Ghi nợ",
-        subtitle: "",
-        iconName: "card",
-        color: Colors.inverseSurface,
-      },
-      {
-        id: "cash",
-        title: "Tiền mặt",
-        subtitle: "",
-        iconName: "cash",
-        color: Colors.success,
-      },
-    ];
+  // ----------------------------------------------------
+  // DEPOSIT ACTIONS
+  // ----------------------------------------------------
 
-  const [isPaying, setIsPaying] = useState(false);
+  // Action 1: Confirm Payment (Check thông tin thanh toán)
+  const handleConfirmDeposit = () => {
+    if (!paymentId) {
+      Alert.alert("Lỗi", "Không tìm thấy mã giao dịch thanh toán.");
+      return;
+    }
 
-  const handlePay = () => {
+    setIsProcessing(true);
+    paymentApi.confirmPayment(paymentId)
+      .then(() => {
+        setIsProcessing(false);
+        const msg = `Nạp tiền thành công ${depositAmountNum.toLocaleString("vi-VN")}đ vào Ví TaskLy!`;
+        if (Platform.OS === "web") {
+          alert(msg);
+        } else {
+          Alert.alert("Thành công", msg);
+        }
+        router.replace("/(tabs)/wallet");
+      })
+      .catch((err: any) => {
+        setIsProcessing(false);
+        Alert.alert("Thất bại", err?.message || "Xác nhận thanh toán thất bại. Vui lòng thử lại!");
+      });
+  };
+
+  // Action 2: Cancel Payment (Hủy thanh toán)
+  const handleCancelDeposit = () => {
+    const confirmAction = () => {
+      if (!paymentId) {
+        router.replace("/(tabs)/wallet");
+        return;
+      }
+
+      setIsProcessing(true);
+      paymentApi.cancelPayment(paymentId)
+        .then(() => {
+          setIsProcessing(false);
+          const msg = "Đã hủy giao dịch nạp tiền thành công.";
+          if (Platform.OS === "web") {
+            alert(msg);
+          } else {
+            Alert.alert("Đã hủy", msg);
+          }
+          router.replace("/(tabs)/wallet");
+        })
+        .catch((err: any) => {
+          setIsProcessing(false);
+          Alert.alert("Thất bại", err?.message || "Hủy giao dịch thất bại.");
+        });
+    };
+
+    if (Platform.OS === "web") {
+      if (window.confirm("Bạn có chắc chắn muốn hủy giao dịch nạp tiền này?")) {
+        confirmAction();
+      }
+    } else {
+      Alert.alert("Hủy thanh toán", "Bạn có chắc chắn muốn hủy giao dịch nạp tiền này?", [
+        { text: "Không", style: "cancel" },
+        { text: "Đồng ý hủy", style: "destructive", onPress: confirmAction },
+      ]);
+    }
+  };
+
+  // Action 3: Go to Home Screen (Về màn hình chính - Lưu PENDING state)
+  const handleGoHome = () => {
+    const msg = "Giao dịch đã được lưu ở trạng thái chờ thanh toán. Bạn có thể tiếp tục thanh toán bất kỳ lúc nào tại Ví TaskLy.";
+    if (Platform.OS === "web") {
+      alert(msg);
+    } else {
+      Alert.alert("Thông báo", msg);
+    }
+    router.replace("/(tabs)");
+  };
+
+  // ----------------------------------------------------
+  // TASK CHECKOUT ACTIONS
+  // ----------------------------------------------------
+  const handlePayTask = () => {
     if (!params.taskId) {
       Alert.alert("Lỗi", "Không tìm thấy thông tin công việc.");
       return;
     }
 
-    setIsPaying(true);
-
+    setIsProcessing(true);
     paymentApi.createPayment({
       taskId: params.taskId,
       amount: rawBudget,
       provider: selectedPayment,
-      applicationId: params.applicationId || undefined
+      applicationId: params.applicationId || undefined,
     })
       .then(() => {
-        // If an application ID is present, we accept it automatically
         if (params.applicationId) {
           return taskApplicationApi.acceptApplication(params.applicationId);
         }
         return Promise.resolve(null);
       })
       .then(() => {
-        setIsPaying(false);
+        setIsProcessing(false);
         const successMsg = "Thanh toán ký quỹ thành công! Ứng viên đã được duyệt và chuyển sang thực hiện.";
         if (Platform.OS === "web") {
           alert(successMsg);
@@ -117,249 +179,213 @@ export default function ClientCheckoutScreen() {
         router.replace("/(tabs)");
       })
       .catch((err: any) => {
-        setIsPaying(false);
-        const errMsg = err.message || "Giao dịch thanh toán thất bại. Vui lòng thử lại.";
-        Alert.alert("Lỗi thanh toán", errMsg);
+        setIsProcessing(false);
+        Alert.alert("Lỗi thanh toán", err.message || "Giao dịch thanh toán thất bại. Vui lòng thử lại.");
       });
   };
 
-  const handleCancel = () => {
-    const errorMsg = "Giao dịch ký quỹ thất bại. Bài đăng không được khởi tạo.";
-
-    if (Platform.OS === "web") {
-      alert(errorMsg);
-    } else {
-      Alert.alert("Hủy / Thất bại", errorMsg);
-    }
-
-    router.back();
+  // Provider Helpers
+  const getProviderInfo = (prov: string) => {
+    const p = (prov || "").toUpperCase();
+    if (p.includes("MOMO")) return { name: "Ví MoMo", Icon: Wallet, color: "#A50064", bg: "#FDF2F8" };
+    if (p.includes("ZALO")) return { name: "Ví ZaloPay", Icon: QrCode, color: "#0068FF", bg: "#EFF6FF" };
+    if (p.includes("VNPAY")) return { name: "VNPay / Banking", Icon: Banknote, color: "#005BAA", bg: "#F0F9FF" };
+    return { name: "Thẻ Visa / Mastercard", Icon: CreditCard, color: "#4F46E5", bg: "#EEF2FF" };
   };
 
+  const provInfo = getProviderInfo(depositProvider);
+  const ProviderIcon = provInfo.Icon;
+
+  // Render Deposit Gateway View
+  if (isDepositFlow) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+
+        {/* Top Navigation Bar */}
+        <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-slate-200">
+          <TouchableOpacity
+            onPress={handleGoHome}
+            className="w-9 h-9 rounded-full bg-slate-100 items-center justify-center"
+          >
+            <Ionicons name="arrow-back" size={20} color="#0F172A" />
+          </TouchableOpacity>
+          <Text className="text-lg font-extrabold text-slate-900">Cổng thanh toán Nạp ví</Text>
+          <TouchableOpacity onPress={handleGoHome} className="p-1">
+            <Home size={20} color="#475569" />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+        >
+          {/* Amount & Status Banner */}
+          <View className="bg-white rounded-3xl p-5 mb-4 border border-slate-200 shadow-sm items-center">
+            <View className="bg-amber-100 px-3 py-1 rounded-full flex-row items-center gap-1.5 mb-2">
+              <Clock size={14} color="#D97706" />
+              <Text className="text-amber-800 text-xs font-bold uppercase">Đang chờ thanh toán (PENDING)</Text>
+            </View>
+            <Text className="text-slate-500 text-xs mb-1">Số tiền nạp vào Ví TaskLy</Text>
+            <Text className="text-indigo-600 text-3xl font-extrabold mb-3">
+              {depositAmountNum.toLocaleString("vi-VN")}đ
+            </Text>
+
+            <View className="w-full bg-slate-50 rounded-2xl p-3 flex-row items-center justify-between border border-slate-100">
+              <View className="flex-row items-center gap-2.5">
+                <View
+                  className="w-10 h-10 rounded-xl items-center justify-center"
+                  style={{ backgroundColor: provInfo.bg }}
+                >
+                  <ProviderIcon size={20} color={provInfo.color} />
+                </View>
+                <View>
+                  <Text className="text-xs font-bold text-slate-800">{provInfo.name}</Text>
+                  <Text className="text-[11px] text-slate-400">Phương thức nạp tiền</Text>
+                </View>
+              </View>
+              <View className="bg-emerald-100 px-2 py-0.5 rounded-md">
+                <Text className="text-[10px] font-bold text-emerald-800">Cổng khả dụng</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* QR Code / Payment Code Instructions Card */}
+          <View className="bg-white rounded-3xl p-5 mb-5 border border-slate-200 shadow-sm items-center">
+            <Text className="text-sm font-bold text-slate-800 mb-1">Mã QR Thanh Toán</Text>
+            <Text className="text-xs text-slate-400 text-center mb-4">
+              Quét mã QR bên dưới hoặc nhấn nút xác nhận bên dưới sau khi chuyển khoản thành công.
+            </Text>
+
+            {/* Simulated QR Code Graphic Box */}
+            <View
+              style={{ width: 200, height: 200 }}
+              className="bg-slate-900 rounded-3xl p-3 items-center justify-center mb-4 shadow-md self-center"
+            >
+              <View
+                style={{ width: 176, height: 176 }}
+                className="border-2 border-dashed border-indigo-400 rounded-2xl items-center justify-center bg-white p-2"
+              >
+                <QrCode size={96} color={provInfo.color} />
+                <Text className="text-[10px] font-mono font-extrabold text-slate-700 mt-1" numberOfLines={1}>
+                  {paymentCode}
+                </Text>
+              </View>
+            </View>
+
+            {/* Payment Code Copy Box */}
+            <View className="w-full bg-indigo-50/70 rounded-xl p-3 flex-row items-center justify-between border border-indigo-100">
+              <View className="flex-1 mr-2">
+                <Text className="text-[10px] font-bold text-indigo-400 uppercase">Mã giao dịch (Payment Code)</Text>
+                <Text className="text-xs font-mono font-bold text-indigo-900">{paymentCode}</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => Alert.alert("Thông báo", `Đã sao chép mã giao dịch: ${paymentCode}`)}
+                className="flex-row items-center gap-1 bg-white px-2.5 py-1.5 rounded-lg border border-indigo-200"
+              >
+                <Copy size={13} color="#3525CD" />
+                <Text className="text-xs font-bold text-indigo-600">Sao chép</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* 3 Main Action Buttons */}
+          <View className="gap-3">
+            {/* Button 1: Check / Confirm Payment */}
+            <TouchableOpacity
+              disabled={isProcessing}
+              onPress={handleConfirmDeposit}
+              className="bg-indigo-600 rounded-2xl py-3.5 items-center flex-row justify-center space-x-2 shadow-sm"
+              activeOpacity={0.85}
+              style={isProcessing ? { opacity: 0.6 } : null}
+            >
+              {isProcessing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <CheckCircle2 size={18} color="#FFFFFF" />
+                  <Text className="text-white text-sm font-bold ml-1.5">
+                    Xác nhận đã thanh toán
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {/* Button 2: Cancel Payment */}
+            <TouchableOpacity
+              disabled={isProcessing}
+              onPress={handleCancelDeposit}
+              className="bg-red-50 border border-red-200 rounded-2xl py-3.5 items-center flex-row justify-center space-x-2"
+              activeOpacity={0.85}
+              style={isProcessing ? { opacity: 0.6 } : null}
+            >
+              <XCircle size={18} color="#DC2626" />
+              <Text className="text-red-700 text-sm font-bold ml-1.5">Hủy thanh toán</Text>
+            </TouchableOpacity>
+
+            {/* Button 3: Go to Home Screen */}
+            <TouchableOpacity
+              disabled={isProcessing}
+              onPress={handleGoHome}
+              className="bg-white border border-slate-300 rounded-2xl py-3.5 items-center flex-row justify-center space-x-2"
+              activeOpacity={0.85}
+            >
+              <Home size={18} color="#475569" />
+              <Text className="text-slate-700 text-sm font-bold ml-1.5">Về màn hình chính</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // Fallback Task Checkout View
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
 
-      {/* Absolute Toolbar Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons
-            name="arrow-back"
-            size={24}
-            color={Colors.onSurfaceVariant}
-          />
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color={Colors.onSurfaceVariant} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Thanh toán</Text>
+        <Text style={styles.headerTitle}>Thanh toán công việc</Text>
         <View style={styles.spacer} />
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Order Details Card */}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>CHI TIẾT ĐƠN HÀNG</Text>
-
           <View style={styles.orderRow}>
             <View style={styles.orderIconCircle}>
               <Ionicons name="brush" size={24} color={Colors.primary} />
             </View>
             <View style={styles.orderInfo}>
-              <Text style={styles.orderName} numberOfLines={1}>
-                {taskName}
-              </Text>
+              <Text style={styles.orderName} numberOfLines={1}>{taskName}</Text>
               <Text style={styles.orderTime}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={13}
-                  color={Colors.onSurfaceVariant}
-                />{" "}
-                {dateVal}, {timeVal}
+                <Ionicons name="calendar-outline" size={13} color={Colors.onSurfaceVariant} /> {dateVal}, {timeVal}
               </Text>
             </View>
           </View>
-
           <View style={styles.divider} />
-
-          {/* Pricing breakdowns */}
           <View style={styles.pricingRow}>
-            <Text style={styles.pricingLabel}>Phí dịch vụ (90%)</Text>
-            <Text style={styles.pricingValue}>{(Math.round(rawBudget * 0.9)).toLocaleString('vi-VN')}đ</Text>
-          </View>
-
-          <View style={styles.pricingRow}>
-            <Text style={styles.pricingLabel}>Phí di chuyển (10%)</Text>
-            <Text style={styles.pricingValue}>{(Math.round(rawBudget * 0.1)).toLocaleString('vi-VN')}đ</Text>
-          </View>
-
-          <View style={styles.dividerCenter}>
-            <View style={styles.dividerCenterLine} />
-            <View style={styles.dividerCenterIconCircle}>
-              <Ionicons name="add" size={14} color={Colors.outline} />
-            </View>
-          </View>
-
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Tổng cộng</Text>
-            <Text style={styles.totalPrice}>{formattedBudget}</Text>
-          </View>
-
-          {/* Taskly Escrow Guarantee Banner */}
-          <View style={{ backgroundColor: '#F0FDF4', borderColor: '#BBF7D0', borderWidth: 1, borderRadius: 10, padding: 12, marginTop: 14, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Ionicons name="shield-checkmark" size={24} color="#16A34A" />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#15803D' }}>🛡️ Bảo vệ đặt cọc qua Ví Escrow</Text>
-              <Text style={{ fontSize: 11, color: '#166534', marginTop: 2 }}>
-                Số tiền {formattedBudget} được hệ thống tạm giữ an toàn. Chỉ giải ngân cho Tasker sau khi bạn xem ảnh nghiệm thu và hài lòng 100%.
-              </Text>
-            </View>
+            <Text style={styles.pricingLabel}>Tổng thanh toán ký quỹ</Text>
+            <Text style={styles.pricingValue}>{rawBudget.toLocaleString("vi-VN")}đ</Text>
           </View>
         </View>
 
-        {/* Promo Code Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Mã giảm giá</Text>
-          <View style={styles.promoInputRow}>
-            <View style={styles.promoInputWrapper}>
-              <Ionicons
-                name="pricetag-outline"
-                size={18}
-                color={Colors.outline}
-                style={styles.promoInputIcon}
-              />
-              <TextInput
-                style={styles.promoTextInput}
-                placeholder="Nhập mã voucher"
-                placeholderTextColor={Colors.outline}
-                value={promoCode}
-                onChangeText={setPromoCode}
-              />
-            </View>
-            <TouchableOpacity style={styles.promoApplyBtn} activeOpacity={0.8}>
-              <Text style={styles.promoApplyText}>Áp dụng</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Payment Methods Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
-
-          <View style={styles.paymentList}>
-            {paymentMethods.map((method) => {
-              const isSelected = selectedPayment === method.id;
-              return (
-                <TouchableOpacity
-                  key={method.id}
-                  activeOpacity={0.9}
-                  onPress={() => setSelectedPayment(method.id)}
-                  style={[
-                    styles.paymentItem,
-                    isSelected
-                      ? styles.paymentItemSelected
-                      : styles.paymentItemUnselected,
-                  ]}
-                >
-                  {/* Method brand Icon container */}
-                  <View
-                    style={[
-                      styles.methodIconBadge,
-                      { backgroundColor: method.color },
-                    ]}
-                  >
-                    <Ionicons
-                      name={method.iconName}
-                      size={20}
-                      color={Colors.white}
-                    />
-                  </View>
-
-                  {/* Text details */}
-                  <View style={styles.paymentItemTextWrapper}>
-                    <Text style={styles.paymentItemTitle}>{method.title}</Text>
-                    {method.subtitle ? (
-                      <Text style={styles.paymentItemSub}>
-                        {method.subtitle}
-                      </Text>
-                    ) : null}
-                  </View>
-
-                  {/* Radio indicators */}
-                  <View
-                    style={[
-                      styles.radioCircleOuter,
-                      isSelected
-                        ? styles.radioCircleOuterActive
-                        : styles.radioCircleOuterInactive,
-                    ]}
-                  >
-                    {isSelected && <View style={styles.radioDot} />}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* Bottom spacing before checkout area */}
-        <View style={styles.bottomSpacer} />
+        <TouchableOpacity
+          disabled={isProcessing}
+          onPress={handlePayTask}
+          style={styles.payButton}
+          activeOpacity={0.85}
+        >
+          {isProcessing ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <Text style={styles.payButtonText}>Xác nhận thanh toán</Text>
+          )}
+        </TouchableOpacity>
       </ScrollView>
-
-      {/* Fixed Secure Bottom Footer Action */}
-      <View style={styles.footerSticky}>
-        <View style={styles.totalReceiptRow}>
-          <Text style={styles.totalReceiptLabel}>Tổng thanh toán</Text>
-          <Text style={styles.totalReceiptValue}>{formattedBudget}</Text>
-        </View>
-
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <TouchableOpacity
-            style={[styles.payButton, { flex: 1 }, isPaying && { backgroundColor: Colors.outline }]}
-            activeOpacity={0.8}
-            onPress={handlePay}
-            disabled={isPaying}
-          >
-            {isPaying ? (
-              <ActivityIndicator color={Colors.white} />
-            ) : (
-              <>
-                <Ionicons name="lock-closed" size={18} color={Colors.white} />
-                <Text style={styles.payButtonText}>Ký quỹ (SUCCESS)</Text>
-              </>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{
-              flex: 1,
-              height: 52,
-              borderRadius: Layout.borderRadius.md,
-              backgroundColor: '#FEE2E2',
-              borderColor: '#EF4444',
-              borderWidth: 1,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-            }}
-            activeOpacity={0.8}
-            onPress={handleCancel}
-          >
-            <Ionicons name="close-circle" size={18} color="#DC2626" />
-            <Text style={{ color: '#DC2626', fontSize: 14, fontWeight: '600' }}>Hủy / Thất bại</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.footerSecureNote}>
-          <Ionicons name="shield-checkmark" size={14} color={Colors.outline} />
-          <Text style={styles.footerSecureNoteText}>
-            Giao dịch được mã hóa an toàn 256-bit
-          </Text>
-        </View>
-      </View>
     </SafeAreaView>
   );
 }
@@ -367,55 +393,49 @@ export default function ClientCheckoutScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: "#F8FAFC",
   },
   header: {
-    height: 64,
-    backgroundColor: Colors.surface,
+    height: 56,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: Colors.outlineVariant + "33",
+    borderBottomColor: "#E2E8F0",
   },
   backButton: {
     width: 40,
     height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
-    color: Colors.onSurface,
+    color: "#0F172A",
   },
   spacer: {
     width: 40,
   },
   scrollContent: {
-    paddingBottom: 150,
+    padding: 16,
   },
   card: {
-    backgroundColor: Colors.surface,
-    borderRadius: Layout.borderRadius.md,
-    padding: Layout.spacing.md,
-    marginHorizontal: Layout.spacing.md,
-    marginTop: Layout.spacing.md,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: Colors.outlineVariant + "33",
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 2,
+    borderColor: "#E2E8F0",
   },
   cardTitle: {
     fontSize: 12,
-    fontWeight: "700",
-    color: Colors.outline,
-    letterSpacing: 1,
-    marginBottom: Layout.spacing.md,
+    fontWeight: "800",
+    color: "#64748B",
+    marginBottom: 12,
   },
   orderRow: {
     flexDirection: "row",
@@ -424,255 +444,55 @@ const styles = StyleSheet.create({
   orderIconCircle: {
     width: 44,
     height: 44,
-    borderRadius: 8,
-    backgroundColor: Colors.primary + "10",
+    borderRadius: 12,
+    backgroundColor: "#EEF2FF",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: Layout.spacing.md,
+    marginRight: 12,
   },
   orderInfo: {
     flex: 1,
   },
   orderName: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: Colors.onSurface,
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0F172A",
   },
   orderTime: {
     fontSize: 12,
-    color: Colors.onSurfaceVariant,
-    marginTop: 4,
-    alignItems: "center",
+    color: "#64748B",
+    marginTop: 2,
   },
   divider: {
     height: 1,
-    backgroundColor: Colors.outlineVariant + "22",
-    marginVertical: Layout.spacing.md,
+    backgroundColor: "#F1F5F9",
+    marginVertical: 12,
   },
   pricingRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: Layout.spacing.sm,
   },
   pricingLabel: {
-    fontSize: 14,
-    color: Colors.onSurfaceVariant,
+    fontSize: 13,
+    color: "#475569",
+    fontWeight: "600",
   },
   pricingValue: {
-    fontSize: 14,
-    color: Colors.onSurface,
-    fontWeight: "500",
-  },
-  dividerCenter: {
-    position: "relative",
-    height: 24,
-    justifyContent: "center",
-    marginVertical: Layout.spacing.xs,
-  },
-  dividerCenterLine: {
-    height: 1,
-    backgroundColor: Colors.outlineVariant + "22",
-    width: "100%",
-  },
-  dividerCenterIconCircle: {
-    position: "absolute",
-    alignSelf: "center",
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: Colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  totalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: Layout.spacing.xs,
-  },
-  totalLabel: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: Colors.onSurface,
-  },
-  totalPrice: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: Colors.primary,
-  },
-  sectionContainer: {
-    paddingHorizontal: Layout.spacing.md,
-    marginTop: Layout.spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: Colors.onSurface,
-    marginBottom: Layout.spacing.md,
-  },
-  promoInputRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  promoInputWrapper: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.outlineVariant,
-    borderRadius: Layout.borderRadius.default,
-    height: 48,
-    paddingHorizontal: Layout.spacing.md,
-  },
-  promoInputIcon: {
-    marginRight: Layout.spacing.sm,
-  },
-  promoTextInput: {
-    flex: 1,
-    height: "100%",
-    fontSize: 14,
-    color: Colors.onSurface,
-  },
-  promoApplyBtn: {
-    height: 48,
-    backgroundColor: Colors.surfaceContainerHigh,
-    paddingHorizontal: Layout.spacing.lg,
-    borderRadius: Layout.borderRadius.default,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  promoApplyText: {
-    color: Colors.primary,
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  paymentList: {
-    gap: Layout.spacing.sm,
-  },
-  paymentItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: Layout.borderRadius.md,
-    padding: Layout.spacing.md,
-    borderWidth: 1.5,
-  },
-  paymentItemSelected: {
-    backgroundColor: Colors.primary + "0d",
-    borderColor: Colors.primary,
-  },
-  paymentItemUnselected: {
-    backgroundColor: Colors.surface,
-    borderColor: Colors.outlineVariant + "33",
-  },
-  methodIconBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: Layout.spacing.md,
-  },
-  paymentItemTextWrapper: {
-    flex: 1,
-  },
-  paymentItemTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.onSurface,
-  },
-  paymentItemSub: {
-    fontSize: 11,
-    color: Colors.primary,
-    marginTop: 2,
-  },
-  radioCircleOuter: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  radioCircleOuterActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.white,
-  },
-  radioCircleOuterInactive: {
-    borderColor: Colors.outlineVariant,
-  },
-  radioDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.primary,
-  },
-  bottomSpacer: {
-    height: 30,
-  },
-  footerSticky: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.surface,
-    padding: Layout.spacing.md,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    borderTopWidth: 1,
-    borderTopColor: Colors.outlineVariant + "33",
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 12,
-  },
-  totalReceiptRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: Layout.spacing.md,
-    paddingHorizontal: Layout.spacing.xs,
-  },
-  totalReceiptLabel: {
-    fontSize: 14,
-    color: Colors.onSurfaceVariant,
-  },
-  totalReceiptValue: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: Colors.primary,
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#3525CD",
   },
   payButton: {
-    height: 52,
-    borderRadius: Layout.borderRadius.md,
-    backgroundColor: Colors.primary,
-    flexDirection: "row",
+    backgroundColor: "#3525CD",
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
   },
   payButtonText: {
-    color: Colors.white,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  footerSecureNote: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    marginTop: Layout.spacing.sm,
-  },
-  footerSecureNoteText: {
-    fontSize: 11,
-    color: Colors.outline,
-    fontWeight: "500",
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });

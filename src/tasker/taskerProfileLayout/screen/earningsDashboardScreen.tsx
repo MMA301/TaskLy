@@ -1,6 +1,7 @@
 import { Banknote, Briefcase, MoreHorizontal, Package, WalletCards, Wrench, X, ArrowDownRight, CheckCircle2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View, Modal, TextInput, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { mockTaskerData } from '../../../../mockdata';
 import { IconTile, MiniBarChart, TaskerCard, TaskerHeader } from '../../taskerHomeLayout/components/TaskerPrimitives';
 import { TASKER_COLORS } from '../../taskerTheme';
@@ -58,9 +59,9 @@ export function EarningsDashboardScreen({ onBack }: TaskerScreenProps) {
   };
 
   return (
-    <View className="flex-1 bg-[#F9F9FF]">
+    <SafeAreaView className="flex-1 bg-[#F9F9FF]" edges={["top"]}>
       <TaskerHeader title="Bảng điều khiển thu nhập" subtitle="Chào, Minh Anh" onBack={onBack} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-6 pb-10">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-6 pb-28">
         <View className="rounded-xl bg-[#3525CD] p-6 mb-4 overflow-hidden">
           <View className="absolute -right-5 -top-3 opacity-20">
             <WalletCards size={120} color="#FFFFFF" />
@@ -174,6 +175,6 @@ export function EarningsDashboardScreen({ onBack }: TaskerScreenProps) {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }

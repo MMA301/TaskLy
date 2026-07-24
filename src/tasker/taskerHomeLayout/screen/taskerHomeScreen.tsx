@@ -1,14 +1,15 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { ArrowRight, Banknote, Bell, BriefcaseBusiness, CheckCircle2, ChevronRight, Clock, History, MapPin, MessageCircle, Play, Search, Star, TrendingUp, UserRound, WalletCards, X,} from "lucide-react-native";
+import { ArrowRight, Banknote, Bell, BriefcaseBusiness, CheckCircle2, ChevronRight, Clock, History, MapPin, MessageCircle, Play, Search, Star, TrendingUp, UserRound, WalletCards, X, } from "lucide-react-native";
 import type { ReactNode } from "react";
-import { useState, useEffect } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
   Pressable,
   ScrollView,
-  Text,
   Switch,
+  Text,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -28,7 +29,7 @@ import { TaskHistoryScreen } from "../../taskerTasksLayout/screen/taskHistoryScr
 import { TASKER_COLORS, taskerShadow } from "../../taskerTheme";
 import type { TaskerBottomTabKey, TaskerIcon, TaskerScreenKey } from "../../types";
 
-import { taskApplicationApi, userApi } from "../../../../service/api";
+import { taskApplicationApi, userApi, walletApi } from "../../../../service/api";
 import { setSelectedTaskId } from "../../../session";
 
 export function TaskerHomeScreen() {
@@ -38,9 +39,22 @@ export function TaskerHomeScreen() {
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [applications, setApplications] = useState<any[]>([]);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchWallet = useCallback(() => {
+    walletApi.getWallet()
+      .then((res: any) => {
+        const wData = res.data || res;
+        if (typeof wData?.balance === "number") {
+          setWalletBalance(wData.balance);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
+    fetchWallet();
     userApi.getProfile()
       .then((res: any) => {
         const user = res.data || res;
@@ -53,7 +67,14 @@ export function TaskerHomeScreen() {
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [fetchWallet]);
+
+  useFocusEffect(
+    useCallback(() => {
+      setScreen("dashboard");
+      fetchWallet();
+    }, [fetchWallet])
+  );
 
   const goDashboard = () => setScreen("dashboard");
   const navigate = (next: TaskerScreenKey) => {
@@ -86,7 +107,7 @@ export function TaskerHomeScreen() {
   const completedApps = applications.filter(a => a.taskId?.status === "completed");
   const inProgressApps = applications.filter(a => a.taskId?.status === "in_progress" || a.status === "accepted");
   const pendingApps = applications.filter(a => a.status === "pending");
-  const totalEarnings = completedApps.reduce((acc, a) => acc + (a.bidPrice || a.taskId?.price || 0), 0);
+  const totalEarnings = walletBalance !== null ? walletBalance : completedApps.reduce((acc, a) => acc + (a.bidPrice || a.taskId?.price || 0), 0);
 
   const displayName = currentUser?.fullName?.split(" ").pop() || "Tasker";
   const hour = new Date().getHours();
@@ -225,11 +246,22 @@ export function TaskerHomeScreen() {
             </TouchableOpacity>
           )}
 
+          {/* ---- Quick Actions Grid ---- */}
+          <View style={{ marginTop: 24, paddingHorizontal: 16 }}>
+            <Text style={{ color: "#111C2D", fontSize: 18, fontWeight: "800", marginBottom: 14 }}>Thao tác nhanh</Text>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <QuickCard icon={Search} label="Tìm việc" color="#3525CD" bg="#EEF2FF" onPress={() => navigate("nearby")} />
+              <QuickCard icon={History} label="Lịch sử" color="#7C3AED" bg="#F5F3FF" onPress={() => navigate("history")} />
+              <QuickCard icon={Banknote} label="Thu nhập" color="#059669" bg="#ECFDF5" onPress={() => navigate("earnings")} />
+              <QuickCard icon={Star} label="Đánh giá" color="#D97706" bg="#FFFBEB" onPress={() => navigate("reviews")} />
+            </View>
+          </View>
+
           {/* ---- In-Progress Tasks ---- */}
           {inProgressApps.length > 0 && (
             <View style={{ marginTop: 24, paddingHorizontal: 16 }}>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <Text style={{ color: "#111C2D", fontSize: 18, fontWeight: "800" }}>Đang thực hiện</Text>
+                <Text style={{ color: "#111C2D", fontSize: 18, fontWeight: "800" }}>Hoạt động</Text>
                 <TouchableOpacity onPress={() => navigate("history")}>
                   <Text style={{ color: TASKER_COLORS.primary, fontSize: 13, fontWeight: "700" }}>Xem tất cả</Text>
                 </TouchableOpacity>
@@ -272,17 +304,6 @@ export function TaskerHomeScreen() {
               </View>
             </View>
           )}
-
-          {/* ---- Quick Actions Grid ---- */}
-          <View style={{ marginTop: 28, paddingHorizontal: 16 }}>
-            <Text style={{ color: "#111C2D", fontSize: 18, fontWeight: "800", marginBottom: 14 }}>Thao tác nhanh</Text>
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              <QuickCard icon={Search} label="Tìm việc" color="#3525CD" bg="#EEF2FF" onPress={() => navigate("nearby")} />
-              <QuickCard icon={History} label="Lịch sử" color="#7C3AED" bg="#F5F3FF" onPress={() => navigate("history")} />
-              <QuickCard icon={Banknote} label="Thu nhập" color="#059669" bg="#ECFDF5" onPress={() => navigate("earnings")} />
-              <QuickCard icon={Star} label="Đánh giá" color="#D97706" bg="#FFFBEB" onPress={() => navigate("reviews")} />
-            </View>
-          </View>
 
           {/* ---- Empty state: no in-progress / pending ---- */}
           {!isLoading && inProgressApps.length === 0 && pendingApps.length === 0 && (
@@ -360,11 +381,10 @@ function getBottomTab(screen: TaskerScreenKey): TaskerBottomTabKey {
   return "dashboard";
 }
 
-function TaskerScreenFrame({ active, onSelect, children }: { active: TaskerBottomTabKey; onSelect: (tab: TaskerBottomTabKey) => void; children: ReactNode }) {
+function TaskerScreenFrame({ children }: { active?: TaskerBottomTabKey; onSelect?: (tab: TaskerBottomTabKey) => void; children: ReactNode }) {
   return (
-    <SafeAreaView className="flex-1 bg-[#F5F7FF]" edges={["top", "bottom", "left", "right"]}>
+    <SafeAreaView className="flex-1 bg-[#F5F7FF]" edges={["top", "left", "right"]}>
       <View className="flex-1">{children}</View>
-      <TaskerBottomNav active={active} onSelect={onSelect} />
     </SafeAreaView>
   );
 }

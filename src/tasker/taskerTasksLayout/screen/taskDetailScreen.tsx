@@ -1,6 +1,7 @@
 import { Bolt, CheckCircle2, Clock, Home, MapPin, Shield, Star, Utensils, ShieldAlert, DollarSign, Camera, X, Upload, Play } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
 import { ScrollView, Text, TouchableOpacity, View, Modal, TextInput, Alert, Image, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getSelectedTaskId } from '../../../session';
 import { GradientButton, IconTile, TaskerCard, TaskerHeader, TaskerPill } from '../../taskerHomeLayout/components/TaskerPrimitives';
 import { TASKER_COLORS } from '../../taskerTheme';
@@ -92,25 +93,27 @@ export function TaskDetailScreen({ onBack, onNavigate }: TaskerScreenProps) {
   const hasApplied = !!myApplication;
 
   return (
-    <View className="flex-1 bg-[#F9F9FF]">
+    <SafeAreaView className="flex-1 bg-[#F9F9FF]" edges={["top"]}>
       <TaskerHeader title="Chi tiết công việc" onBack={onBack} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-5 pb-10 gap-5">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 pt-5 pb-28 gap-5">
         
-        {/* SOS Emergency Banner */}
-        <TouchableOpacity
-          onPress={handleSos}
-          className={`p-3 rounded-xl flex-row items-center justify-between ${sosActive ? 'bg-red-600' : 'bg-red-100 border border-red-300'}`}
-        >
-          <View className="flex-row items-center gap-2">
-            <ShieldAlert size={22} color={sosActive ? '#FFFFFF' : '#DC2626'} />
-            <View>
-              <Text className={`font-extrabold text-sm ${sosActive ? 'text-white' : 'text-red-700'}`}>
-                {sosActive ? '🔴 Đã bật chế độ bảo vệ SOS Khẩn cấp' : 'Nút An Toàn Khẩn Cấp (SOS)'}
-              </Text>
-              <Text className={`text-xs ${sosActive ? 'text-red-100' : 'text-red-600'}`}>Chạm để gửi tọa độ GPS cấp cứu tới Admin & Đồn công an</Text>
+        {/* SOS Emergency Banner (Chỉ hiện khi chưa hoàn thành) */}
+        {currentTask.status !== "completed" && (
+          <TouchableOpacity
+            onPress={handleSos}
+            className={`p-3 rounded-xl flex-row items-center justify-between ${sosActive ? 'bg-red-600' : 'bg-red-100 border border-red-300'}`}
+          >
+            <View className="flex-row items-center gap-2">
+              <ShieldAlert size={22} color={sosActive ? '#FFFFFF' : '#DC2626'} />
+              <View>
+                <Text className={`font-extrabold text-sm ${sosActive ? 'text-white' : 'text-red-700'}`}>
+                  {sosActive ? '🔴 Đã bật chế độ bảo vệ SOS Khẩn cấp' : 'Nút An Toàn Khẩn Cấp (SOS)'}
+                </Text>
+                <Text className={`text-xs ${sosActive ? 'text-red-100' : 'text-red-600'}`}>Chạm để gửi tọa độ GPS cấp cứu tới Admin & Đồn công an</Text>
+              </View>
             </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        )}
 
         <TaskerCard className="p-5">
           <View className="flex-row flex-wrap gap-2 mb-3">
@@ -413,7 +416,7 @@ export function TaskDetailScreen({ onBack, onNavigate }: TaskerScreenProps) {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 

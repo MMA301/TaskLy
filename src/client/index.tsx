@@ -6,3 +6,4 @@ export { default as ClientHomeScreen } from "./screen/clientHomeScreen";
 export { default as ClientJobDetailsScreen } from "./screen/clientJobDetailsScreen";
 export { default as ClientProfileScreen } from "./screen/clientProfileScreen";
 export { default as ClientTrackingScreen } from "./screen/clientTrackingScreen";
+export { default as ClientWalletScreen } from "./screen/clientWalletScreen";

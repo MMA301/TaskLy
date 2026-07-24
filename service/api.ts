@@ -137,12 +137,33 @@ export const taskApplicationApi = {
 
 export const paymentApi = {
   createPayment: (data: { taskId: string; amount: number; provider: string; applicationId?: string }) => api.post('/payments', data),
+  deposit: (data: { amount: number; provider: string }) => api.post('/payments/deposit', data),
+  confirmPayment: (paymentId: string) => api.post(`/payments/${paymentId}/confirm`),
   getMyPayments: (params?: any) => api.get('/payments', { params }),
   getPaymentById: (id: string) => api.get(`/payments/${id}`),
   confirmFakePayment: (data: { paymentId: string }) => api.post('/payments/fake-confirm', data),
   cancelPayment: (id: string) => api.post(`/payments/${id}/cancel`),
   releasePayment: (id: string) => api.post(`/payments/${id}/release`),
   refundPayment: (id: string) => api.post(`/payments/${id}/refund`),
+};
+
+export const walletApi = {
+  getWallet: () => api.get('/wallet'),
+  getHistory: () => api.get('/wallet/history'),
+  deposit: async (data: { amount: number; paymentMethod?: string }) => {
+    const rawProvider = (data.paymentMethod || 'momo').toLowerCase();
+    const provider = ['momo', 'vnpay', 'zalopay'].includes(rawProvider) ? rawProvider : 'momo';
+    const depositRes: any = await api.post('/payments/deposit', { amount: data.amount, provider });
+    const paymentData = depositRes?.data || depositRes;
+    const paymentId = paymentData?.payment?._id || paymentData?.payment?.id || paymentData?._id || paymentData?.id;
+    if (paymentId) {
+      return api.post(`/payments/${paymentId}/confirm`);
+    }
+    return depositRes;
+  },
+  hold: (data: { taskId: string; amount: number }) => api.post('/wallet/hold', data),
+  refund: (data: { taskId: string }) => api.post('/wallet/refund', data),
+  release: (data: { taskId: string; taskerId: string }) => api.post('/wallet/release', data),
 };
 
 export const reviewApi = {
@@ -154,5 +175,7 @@ export const adminApi = {
   verifyUser: (userId: string) => api.patch(`/users/${userId}/verify`),
   banUser: (userId: string) => api.patch(`/users/${userId}/ban`),
 };
+
+export { getGeminiSmartPrice } from './geminiService';
 
 export default api;

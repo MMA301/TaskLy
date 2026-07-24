@@ -1,5 +1,6 @@
 import { CalendarCheck, ChevronLeft, ChevronRight, Clock, MapPin, WalletCards } from 'lucide-react-native';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { mockTaskerData } from '../../../../mockdata';
 import { GradientButton, IconTile, TaskerCard, TaskerHeader, TaskerPill } from '../../taskerHomeLayout/components/TaskerPrimitives';
 import { TASKER_COLORS } from '../../taskerTheme';
@@ -10,7 +11,7 @@ const calendarCells = ['25', '26', '27', '28', '29', '30', '1', '2', '3', '4', '
 
 export function ScheduleCalendarScreen({ onBack }: TaskerScreenProps) {
   return (
-    <View className="flex-1 bg-[#F9F9FF]">
+    <SafeAreaView className="flex-1 bg-[#F9F9FF]" edges={["top"]}>
       <TaskerHeader
         title="Lịch Trình"
         subtitle="Quản lý lịch rảnh"
@@ -125,6 +126,6 @@ export function ScheduleCalendarScreen({ onBack }: TaskerScreenProps) {
           </View>
         </TaskerCard>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
